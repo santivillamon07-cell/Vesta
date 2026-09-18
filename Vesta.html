@@ -1,4 +1,49 @@
 <!DOCTYPE html>
+<!--
+  ╔══════════════════════════════════════════════════════════════════╗
+  ║  VESTA — mapa del archivo                                        ║
+  ╚══════════════════════════════════════════════════════════════════╝
+
+  Toda la app vive acá: un solo archivo, sin frameworks y sin pedirle
+  nada a la red. Está ordenado para que se pueda editar de a pedazos.
+
+  DÓNDE TOCAR QUÉ
+  ───────────────────────────────────────────────────────────────────
+  ¿Querés cambiar…                    → Buscá en el archivo…
+  ───────────────────────────────────────────────────────────────────
+  Colores, radios, tipografías        → ":root{" (arriba del <style>)
+  Curvas y duraciones del movimiento  → "TANDA 3 — Movimiento fluido"
+  El fondo (engranajes, péndulo)      → "TANDA 4" y el div #mech
+  Velocidad del mecanismo             → "const Mech" (módulo JS)
+  Iconos                              → "const ICON" (JS, sección 0)
+  Avisos y sus tonos                  → "function showBanner"
+  Una pestaña entera                  → "<!-- ALARMAS -->", "<!-- GYM -->"…
+  La lógica de un módulo              → "ARMARIO INTELIGENTE" / "RUTINAS DE GYM"
+  Privacidad / permisos de la página  → el meta Content-Security-Policy
+  Qué se cachea sin conexión          → sw.js (archivo aparte)
+
+  LAS TRES REGLAS DE LA CASA
+  ───────────────────────────────────────────────────────────────────
+  1. Nada sale del dispositivo. Si una función nueva necesita red, hay
+     que abrir a mano el Content-Security-Policy de acá abajo. Que
+     cueste es a propósito.
+  2. Lo que se mueve se mueve con transform y opacity. Animar width,
+     height, top o left obliga al navegador a recalcular la página en
+     cada cuadro y se nota en teléfonos.
+  3. Duraciones y curvas salen de los tokens (--dur-*, --ease-*).
+     Un número suelto hoy son veinte números distintos en un año.
+
+  CÓMO SE AGREGAN COSAS
+  ───────────────────────────────────────────────────────────────────
+  · Lista nueva con entrada en cascada  → clase "stagger" en el contenedor
+  · Icono nuevo                          → sumarlo al objeto ICON
+  · Gesto al terminar un proceso         → wrapAfter('miFuncion', …)
+  · Que el mecanismo acuse un proceso    → Mech.burst(8, 850)
+
+  Validá después de editar: node --check sobre el JS y que las llaves
+  del CSS cierren parejas. Es un archivo grande; el error silencioso
+  es el caro.
+-->
 <html lang="es">
 <head>
 <meta charset="UTF-8">
@@ -12,6 +57,20 @@
 <link rel="apple-touch-icon" href="./icon-192.png">
 
 <meta name="theme-color" content="#0a0500">
+
+<!-- ── Privacidad, garantizada por el navegador ──────────────────────
+     Vesta no tiene servidores, cuentas ni analítica, pero eso es una
+     promesa: esto es la prueba. La política de abajo la aplica el
+     navegador, no el código, así que aunque una línea intentara mandar
+     datos afuera, la conexión no saldría.
+       connect-src 'none'  → ni fetch, ni XHR, ni WebSocket, ni beacon
+       default-src 'self'  → nada de CDNs, fuentes o scripts externos
+       img/media data:     → las fotos del clóset y los audios de las
+                             alarmas viven como Base64 dentro del propio
+                             dispositivo, por eso se permiten
+       form-action 'none'  → ningún formulario puede enviarse a ningún lado -->
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; media-src 'self' data: blob:; font-src 'self'; connect-src 'none'; form-action 'none'; base-uri 'none'; frame-ancestors 'none'; object-src 'none'">
+<meta name="referrer" content="no-referrer">
 <meta name="mobile-web-app-capable" content="yes">
 <!-- Iconos Apple Touch (crítico para guardar en pantalla de inicio iOS) -->
 <style>
@@ -411,10 +470,8 @@ input,textarea{font-family:inherit;}
   color:var(--faint);font-size:clamp(7.5px,2.2vw,9.5px);font-weight:600;letter-spacing:.2px;white-space:nowrap;
   cursor:pointer;padding:4px 1px;border-radius:12px;transition:color .15s;}
 .tab-btn.active{color:var(--amber);}
-.tab-btn.active::before{
-  content:'';position:absolute;top:0;left:50%;transform:translateX(-50%);width:32px;height:32px;
-  border-radius:50%;background:radial-gradient(circle,rgba(232,184,74,0.22),rgba(232,184,74,0) 72%);
-}
+/* El halo de la pestaña activa ahora es un elemento único que se desliza
+   entre pestañas (.tab-ink), en vez de aparecer y desaparecer en cada botón. */
 .tab-icon{display:flex;position:relative;z-index:1;}
 .tab-icon svg{width:22px;height:22px;}
 
@@ -497,12 +554,23 @@ input,textarea{font-family:inherit;}
 .mini-hint{font-size:12px;color:var(--faint);text-align:center;margin:10px 0 18px;}
 
 /* ── Banner de notificación ─────────────────────────────────────── */
-.notif-banner{display:none;position:fixed;top:calc(env(safe-area-inset-top,0px) + 14px);left:50%;
-  transform:translateX(-50%);z-index:9000;max-width:calc(var(--max) - 32px);width:max-content;
+.notif-banner{display:flex;align-items:center;gap:10px;
+  position:fixed;top:calc(env(safe-area-inset-top,0px) + 14px);left:50%;
+  z-index:9000;max-width:calc(var(--max) - 32px);width:max-content;
   background:rgba(20,13,5,0.96);border:1px solid var(--line-strong);border-radius:14px;
-  padding:12px 18px;font-size:14px;font-weight:600;color:var(--ink);text-align:center;
-  box-shadow:0 10px 30px rgba(0,0,0,0.5);backdrop-filter:blur(12px);animation:bannerIn .3s ease;}
-@keyframes bannerIn{from{opacity:0;transform:translate(-50%,-12px);}to{opacity:1;transform:translate(-50%,0);}}
+  padding:12px 16px;font-size:14px;font-weight:600;color:var(--ink);text-align:left;
+  box-shadow:0 10px 30px rgba(0,0,0,0.5);backdrop-filter:blur(12px);
+  opacity:0;visibility:hidden;pointer-events:none;
+  transform:translate(-50%,-16px) scale(.96);
+  transition:opacity .22s cubic-bezier(.2,0,0,1),transform .44s cubic-bezier(.34,1.42,.5,1),visibility .22s;}
+.notif-banner.show{opacity:1;visibility:visible;transform:translate(-50%,0) scale(1);}
+.notif-banner.hide{opacity:0;transform:translate(-50%,-10px) scale(.97);transition-duration:.2s;}
+.notif-banner .banner-ic{display:inline-flex;flex-shrink:0;color:var(--brass);}
+.notif-banner.tone-ok .banner-ic{color:#8cc46a;}
+.notif-banner.tone-warn .banner-ic{color:var(--amber);}
+.notif-banner.tone-danger .banner-ic{color:#e08a7a;}
+.notif-banner.tone-alarm .banner-ic{color:var(--amber);}
+.notif-banner.tone-event .banner-ic{color:#9fb4e0;}
 
 /* Animación usada por el banner de instalación iOS */
 @keyframes slideUp{from{transform:translateY(100%);opacity:0;}to{transform:none;opacity:1;}}
@@ -741,39 +809,22 @@ body.theme-light .reg-field-group{
 }
 .page.active{animation:pageEnter .46s cubic-bezier(.22,1,.36,1);}
 
-/* 2 ── Pestaña activa: el ícono se eleva y respira con brillo ámbar */
-.tab-btn .tab-icon{transition:transform .28s cubic-bezier(.34,1.56,.64,1);}
+/* 2 ── Pestaña activa: el ícono se eleva y toma el brillo ámbar.
+       Sin bucle infinito de glow: el brillo se enciende una vez al llegar,
+       así la barra no repinta para siempre (mejor batería). */
+.tab-btn .tab-icon{transition:transform .34s var(--ease-spring),filter .34s var(--ease-emph);}
 .tab-btn.active .tab-icon{
   transform:translateY(-3px);
-  animation:tabGlow 2.6s ease-in-out infinite;
-}
-@keyframes tabGlow{
-  0%,100%{filter:drop-shadow(0 0 2px rgba(232,184,74,0.35));}
-  50%{filter:drop-shadow(0 0 8px rgba(232,184,74,0.7));}
+  filter:drop-shadow(0 0 6px rgba(232,184,74,0.55));
 }
 .tab-btn:active .tab-icon{transform:scale(.86);}
 
-/* 3 ── Cascada de tarjetas: cada lista revela sus ítems en secuencia */
+/* 3 ── Cascada de tarjetas: ahora la resuelve el sistema .stagger de la
+       Tanda 3 (un solo bloque en lugar de ~15 líneas de selectores). */
 @keyframes cardIn{
-  from{opacity:0;transform:translateY(14px);}
+  from{opacity:0;transform:translate3d(0,14px,0);}
   to{opacity:1;transform:none;}
 }
-#alarmList .alarm-card,
-#expenseList > *,
-#calEventsList .cal-event-card,
-#gymRoutineList > *,
-#gymLoadsList > *,
-#budgetLegend .legend-item{
-  animation:cardIn .42s cubic-bezier(.22,1,.36,1) both;
-}
-/* Retraso escalonado (los primeros 12 entran en cascada) */
-#alarmList .alarm-card:nth-child(1),#expenseList>*:nth-child(1),#calEventsList .cal-event-card:nth-child(1),#gymRoutineList>*:nth-child(1),#gymLoadsList>*:nth-child(1),#budgetLegend .legend-item:nth-child(1){animation-delay:.02s;}
-#alarmList .alarm-card:nth-child(2),#expenseList>*:nth-child(2),#calEventsList .cal-event-card:nth-child(2),#gymRoutineList>*:nth-child(2),#gymLoadsList>*:nth-child(2),#budgetLegend .legend-item:nth-child(2){animation-delay:.07s;}
-#alarmList .alarm-card:nth-child(3),#expenseList>*:nth-child(3),#calEventsList .cal-event-card:nth-child(3),#gymRoutineList>*:nth-child(3),#gymLoadsList>*:nth-child(3),#budgetLegend .legend-item:nth-child(3){animation-delay:.12s;}
-#alarmList .alarm-card:nth-child(4),#expenseList>*:nth-child(4),#calEventsList .cal-event-card:nth-child(4),#gymRoutineList>*:nth-child(4),#gymLoadsList>*:nth-child(4),#budgetLegend .legend-item:nth-child(4){animation-delay:.17s;}
-#alarmList .alarm-card:nth-child(5),#expenseList>*:nth-child(5),#calEventsList .cal-event-card:nth-child(5),#gymRoutineList>*:nth-child(5),#gymLoadsList>*:nth-child(5),#budgetLegend .legend-item:nth-child(5){animation-delay:.22s;}
-#alarmList .alarm-card:nth-child(6),#expenseList>*:nth-child(6),#calEventsList .cal-event-card:nth-child(6),#gymRoutineList>*:nth-child(6),#gymLoadsList>*:nth-child(6),#budgetLegend .legend-item:nth-child(6){animation-delay:.27s;}
-#alarmList .alarm-card:nth-child(n+7),#expenseList>*:nth-child(n+7),#calEventsList .cal-event-card:nth-child(n+7),#gymRoutineList>*:nth-child(n+7),#gymLoadsList>*:nth-child(n+7),#budgetLegend .legend-item:nth-child(n+7){animation-delay:.32s;}
 
 /* 4 ── Calendario: los días aparecen en una onda al cambiar de mes */
 @keyframes dayPop{
@@ -789,13 +840,7 @@ body.theme-light .reg-field-group{
 .cal-grid .cal-day:nth-child(7n+6){animation-delay:.09s;}
 .cal-grid .cal-day:nth-child(7n+7){animation-delay:.108s;}
 
-/* 5 ── Botón flotante "+" del armario: respira y se hunde al tocar */
-.aw-fab{animation:fabBreath 3.4s ease-in-out infinite;}
-@keyframes fabBreath{
-  0%,100%{box-shadow:0 8px 24px rgba(232,184,74,0.35);}
-  50%{box-shadow:0 8px 30px rgba(232,184,74,0.6);}
-}
-.aw-fab:active{transform:scale(.9) rotate(90deg);transition:transform .2s cubic-bezier(.34,1.56,.64,1);}
+/* 5 ── Botón flotante del armario: ver "FAB que se transforma" en la Tanda 3. */
 
 /* 6 ── Cronómetro: la hora late suavemente mientras corre */
 .sw-time.running{animation:swPulse 1.4s ease-in-out infinite;}
@@ -828,16 +873,9 @@ body.theme-light .reg-field-group{
 @keyframes appIn{from{opacity:0;transform:translateY(10px);}to{opacity:1;transform:none;}}
 .app{animation:appIn .6s cubic-bezier(.22,1,.36,1) both;}
 
-/* 10 ── Armario: las prendas aparecen con escala + cascada */
-@keyframes tileIn{from{opacity:0;transform:scale(.9) translateY(10px);}to{opacity:1;transform:none;}}
-#awGrid .aw-card{animation:tileIn .4s cubic-bezier(.22,1,.36,1) both;}
-#awGrid .aw-card:nth-child(1){animation-delay:.03s;}
-#awGrid .aw-card:nth-child(2){animation-delay:.08s;}
-#awGrid .aw-card:nth-child(3){animation-delay:.13s;}
-#awGrid .aw-card:nth-child(4){animation-delay:.18s;}
-#awGrid .aw-card:nth-child(5){animation-delay:.23s;}
-#awGrid .aw-card:nth-child(6){animation-delay:.28s;}
-#awGrid .aw-card:nth-child(n+7){animation-delay:.33s;}
+/* 10 ── Armario: las prendas aparecen con escala + cascada.
+       Los retardos los pone el sistema .stagger.pop de la Tanda 3. */
+@keyframes tileIn{from{opacity:0;transform:scale(.9) translate3d(0,10px,0);}to{opacity:1;transform:none;}}
 
 /* 11 ── Lookbook: cada prenda del outfit cae en su lugar */
 @keyframes slotDrop{from{opacity:0;transform:translateY(-12px) scale(.92);}to{opacity:1;transform:none;}}
@@ -878,6 +916,496 @@ body.theme-light .reg-field-group{
   .modal-overlay.open .modal-handle,.event-modal-overlay.open .event-modal-handle{
     animation:none !important;
   }
+}
+
+
+/* ══════════════════════════════════════════════════════════════════
+ //  TANDA 3 — Movimiento fluido
+ //  Una sola gramática de movimiento para toda la app. Las referencias
+ //  de cada pieza están anotadas en su bloque: barra con indicador que
+ //  se desliza (iOS / Linear), transición direccional entre secciones
+ //  (Material "shared axis"), onda al tocar (Material ripple), cifras
+ //  que cuentan hacia su valor (Stripe), anillo que se dibuja (Apple
+ //  Fitness) y avisos con muelle (Linear).
+ //
+ //  Reglas de la casa:
+ //   · Todo lo que se mueve lo hace con transform/opacity (compositor),
+ //     nunca con top/left/width — así no hay reflow por frame.
+ //   · Duraciones y curvas salen de tokens, no de números sueltos.
+ //   · Nada se anima en bucle infinito salvo que comunique estado vivo
+ //     (una alarma sonando, el cronómetro corriendo).
+   ══════════════════════════════════════════════════════════════════ */
+:root{
+  /* Curvas */
+  --ease-glide:cubic-bezier(.22,1,.36,1);     /* salida expo: entra rápido, frena suave */
+  --ease-spring:cubic-bezier(.34,1.42,.5,1);  /* muelle corto, sobrepasa apenas */
+  --ease-emph:cubic-bezier(.2,0,0,1);         /* énfasis: arranque decidido */
+  --ease-exit:cubic-bezier(.4,0,.9,.2);       /* salidas: se va sin ceremonia */
+  /* Duraciones */
+  --dur-1:.16s;   /* micro-feedback (presionar) */
+  --dur-2:.26s;   /* cambios de estado */
+  --dur-3:.42s;   /* entradas de contenido */
+  --dur-4:.62s;   /* recorridos largos (hojas, páginas) */
+  --stag:55ms;    /* separación entre ítems de una cascada */
+
+  /* Presencia del mecanismo de fondo. Es LA perilla para tocar si el
+     fondo se ve demasiado o demasiado poco: un solo número y cambian
+     los tres engranajes y el péndulo a la vez.
+       .04 → apenas un susurro (se intuye, no se ve)
+       .09 → se lee el dibujo y se nota el giro   ← valor actual
+       .16 → protagonista, compite con el contenido */
+  --mech-op:.09;
+  --mech-op-work:.17;   /* cuando la app está guardando o generando */
+  --mech-op-alert:.22;  /* cuando una alarma está sonando */
+}
+
+/* ── Iconos SVG (reemplazan a todos los emojis de la interfaz) ──────
+   Un solo trazo de 1.8 y color heredado: el icono toma el color del
+   botón que lo contiene, así no hay que mantener paletas aparte. */
+.ico{display:block;flex-shrink:0;}
+.btn-add,.sw-btn,.btn-delete,.gym-ex-del,.gym-load-del,.aw-saved-del,.cal-event-del,
+.gym-load-update,.sound-icon,.cal-no-icon,.aw-fab{
+  display:inline-flex;align-items:center;justify-content:center;}
+.gym-add-btn,.aw-btn,.ring-btn{display:inline-flex;align-items:center;justify-content:center;gap:9px;}
+.aw-sheet-opt{gap:14px;}
+.aw-sheet-opt .ic{display:inline-flex;color:var(--brass);}
+.sound-icon{color:var(--brass);}
+.cal-no-icon{color:var(--amber);opacity:.7;}
+.empty-icon{display:flex;justify-content:center;}
+
+/* Estados de la alarma: un punto en vez de un símbolo suelto */
+.status-badge{display:inline-flex;align-items:center;gap:6px;}
+.status-badge .dot{width:6px;height:6px;border-radius:50%;background:currentColor;flex-shrink:0;}
+.status-badge.ringing .dot{animation:dotPing 1.15s var(--ease-emph) infinite;}
+@keyframes dotPing{
+  0%,100%{transform:scale(1);opacity:1;}
+  50%{transform:scale(1.5);opacity:.5;}
+}
+
+/* ── 17 ── Indicador deslizante de la barra de pestañas ─────────────
+   Referencia: la barra de iOS y la navegación de Linear. En vez de que
+   el halo aparezca de golpe en la pestaña nueva, hay UN solo halo que
+   viaja hasta ella. El recorrido se hace con translate3d + tokens de
+   ancho, así que no se recalcula layout al cambiar de sección. */
+.tab-ink{
+  position:absolute;top:3px;left:0;height:40px;width:var(--ink-w,48px);
+  transform:translate3d(var(--ink-x,0px),0,0);
+  border-radius:14px;pointer-events:none;z-index:0;opacity:0;
+  background:radial-gradient(62% 72% at 50% 42%,rgba(232,184,74,0.24),rgba(232,184,74,0) 74%);
+  transition:transform .46s var(--ease-spring),width .46s var(--ease-spring),opacity var(--dur-2) ease;
+}
+.tab-ink.ready{opacity:1;}
+.tab-ink::after{
+  content:'';position:absolute;top:-7px;left:50%;transform:translateX(-50%);
+  width:20px;height:2px;border-radius:2px;
+  background:linear-gradient(90deg,transparent,var(--amber),transparent);
+}
+
+/* ── 18 ── Transición direccional entre secciones ───────────────────
+   Referencia: "shared axis X" de Material y el stack de navegación de
+   iOS. Si vas hacia una pestaña de la derecha, la página entra desde la
+   derecha; si volvés, entra desde la izquierda. El sentido lo escribe
+   switchTab en --dir (1 o -1), y el mismo keyframe sirve para los dos. */
+.page{--dir:1;}
+@keyframes pageIn{
+  from{opacity:0;transform:translate3d(calc(26px * var(--dir)),0,0) scale(.99);}
+  to{opacity:1;transform:none;}
+}
+.page.active{animation:pageIn var(--dur-3) var(--ease-glide);}
+
+/* ── 19 ── Cascada genérica de listas ───────────────────────────────
+   Un contenedor con .stagger revela a sus hijos en secuencia. Antes esto
+   eran ~15 líneas de selectores repetidos por lista; ahora cualquier
+   lista nueva hereda el comportamiento con solo agregar la clase.
+   El tope de 8 escalones evita que una lista larga tarde una eternidad. */
+.stagger>*{
+  animation:cardIn var(--dur-3) var(--ease-glide) both;
+  animation-delay:calc(var(--i,0) * var(--stag));
+}
+.stagger.pop>*{animation-name:tileIn;}
+.stagger>*:nth-child(1){--i:0;}
+.stagger>*:nth-child(2){--i:1;}
+.stagger>*:nth-child(3){--i:2;}
+.stagger>*:nth-child(4){--i:3;}
+.stagger>*:nth-child(5){--i:4;}
+.stagger>*:nth-child(6){--i:5;}
+.stagger>*:nth-child(7){--i:6;}
+.stagger>*:nth-child(n+8){--i:7;}
+
+/* ── 20 ── Onda al tocar (ripple) ───────────────────────────────────
+   Referencia: Material. La onda nace donde tocaste, no en el centro,
+   que es lo que hace que el botón se sienta físico. Solo en los botones
+   grandes de acción: en los chiquitos ensucia más de lo que aporta. */
+.rippling{position:relative;overflow:hidden;}
+.ripple{
+  position:absolute;border-radius:50%;pointer-events:none;
+  transform:scale(0);opacity:.5;will-change:transform,opacity;
+  background:radial-gradient(circle,rgba(255,228,168,0.5),rgba(255,228,168,0) 70%);
+  animation:rippleOut .6s var(--ease-glide) forwards;
+}
+@keyframes rippleOut{to{transform:scale(1);opacity:0;}}
+
+/* ── 21 ── Hojas y modales con muelle ───────────────────────────────
+   Referencia: los diálogos de Vercel y las hojas de iOS. La hoja sube
+   con un muelle corto y su contenido entra detrás, escalonado, para que
+   el ojo aterrice primero en el título y después en los controles. */
+.modal,.event-modal{transition:transform var(--dur-4) var(--ease-spring);}
+.aw-sheet{transition:transform var(--dur-4) var(--ease-spring);}
+.modal-overlay,.event-modal-overlay,.mini-modal-overlay,.aw-sheet-ov{
+  transition:opacity var(--dur-2) var(--ease-emph),visibility var(--dur-2);}
+.mini-modal{transition:transform var(--dur-3) var(--ease-spring),opacity var(--dur-2) ease;opacity:0;}
+.mini-modal-overlay.open .mini-modal{opacity:1;}
+
+@keyframes sheetItem{
+  from{opacity:0;transform:translate3d(0,10px,0);}
+  to{opacity:1;transform:none;}
+}
+.modal-overlay.open .modal>*:not(.modal-handle),
+.event-modal-overlay.open .event-modal>*:not(.event-modal-handle),
+.aw-sheet-ov.open .aw-sheet>*:not(.aw-sheet-grip){
+  animation:sheetItem .38s var(--ease-glide) both;
+}
+.modal-overlay.open .modal>*:nth-child(2),
+.event-modal-overlay.open .event-modal>*:nth-child(2),
+.aw-sheet-ov.open .aw-sheet>*:nth-child(2){animation-delay:.06s;}
+.modal-overlay.open .modal>*:nth-child(3),
+.event-modal-overlay.open .event-modal>*:nth-child(3),
+.aw-sheet-ov.open .aw-sheet>*:nth-child(3){animation-delay:.1s;}
+.modal-overlay.open .modal>*:nth-child(4),
+.event-modal-overlay.open .event-modal>*:nth-child(4),
+.aw-sheet-ov.open .aw-sheet>*:nth-child(4){animation-delay:.14s;}
+.modal-overlay.open .modal>*:nth-child(n+5),
+.event-modal-overlay.open .event-modal>*:nth-child(n+5),
+.aw-sheet-ov.open .aw-sheet>*:nth-child(n+5){animation-delay:.18s;}
+
+/* ── 22 ── FAB que se transforma ────────────────────────────────────
+   Referencia: el FAB de Material que gira a "×" cuando abre su hoja.
+   El mismo icono "+" rotado 45° ya es una cruz: un elemento, dos
+   significados, y la rotación cuenta que es el mismo botón. */
+.aw-fab{transition:transform var(--dur-2) var(--ease-spring),box-shadow var(--dur-2) ease;}
+.aw-fab .ico{transition:transform var(--dur-2) var(--ease-spring);}
+.aw-fab.sheet-open .ico{transform:rotate(45deg);}
+.aw-fab:active{transform:scale(.9);}
+
+/* ── 23 ── Encabezados que ceden al hacer scroll ────────────────────
+   Referencia: los títulos grandes de iOS. Al bajar, el rótulo de
+   sección se retira y deja el contenido protagonista. Solo opacidad y
+   transform: no cambia altura, así que el texto nunca salta. */
+.label-top,.sw-label,.reg-label,.gym-kicker,.aw-kicker{
+  transition:opacity var(--dur-2) var(--ease-emph),transform var(--dur-2) var(--ease-emph);
+}
+.is-scrolled .label-top,.is-scrolled .sw-label,.is-scrolled .reg-label,
+.is-scrolled .gym-kicker,.is-scrolled .aw-kicker{
+  opacity:0;transform:translate3d(0,-8px,0);
+}
+
+/* ── 24 ── Cifras que cuentan hacia su valor ────────────────────────
+   Referencia: los importes de Stripe. El monto disponible no salta de
+   un número al otro: recorre la diferencia. El recorrido lo hace JS
+   (animateMoney); acá solo se asegura que el ancho no baile. */
+.donut-hours,.reg-field-val{font-variant-numeric:tabular-nums;}
+.donut-center{transition:transform var(--dur-3) var(--ease-spring);}
+.donut-wrap.counting .donut-center{transform:scale(1.03);}
+
+/* ── 25 ── El anillo del presupuesto se dibuja ──────────────────────
+   Referencia: los anillos de Apple Fitness. Cada segmento crece desde
+   cero siguiendo su propio trazo en vez de aparecer entero. */
+#donutSegments circle{transition:stroke-dasharray .72s var(--ease-glide);}
+
+/* ── 26 ── Acordeón del gym con la misma curva que el resto ─────────*/
+.gym-day-body{transition:grid-template-rows var(--dur-3) var(--ease-glide),opacity var(--dur-2) ease;}
+
+/* ── 27 ── Foco visible (teclado) ───────────────────────────────────
+   Piso de calidad: si navegás con Tab, siempre se ve dónde estás. */
+:focus-visible{outline:2px solid var(--amber);outline-offset:3px;border-radius:12px;}
+
+/* ── 28 ── Pausa global de animaciones ──────────────────────────────
+   Cuando Vesta queda en segundo plano no tiene sentido seguir pintando
+   latidos y brillos: se congela todo y se reanuda al volver. */
+body.anim-paused *,body.anim-paused *::before,body.anim-paused *::after{
+  animation-play-state:paused !important;
+}
+
+/* ── 29 ── Accesibilidad de la tanda 3 ──────────────────────────────
+   Quien pide menos movimiento conserva la app entera, sin recorridos. */
+@media (prefers-reduced-motion:reduce){
+  .tab-ink{transition:none;}
+  .ripple{display:none;}
+  .stagger>*{animation:none !important;}
+  #donutSegments circle{transition:none;}
+  .page.active{animation:none;}
+}
+
+
+/* ══════════════════════════════════════════════════════════════════
+ //  TANDA 4 — El mecanismo, los procesos y el sello
+ //  Tres cosas: un fondo que es una máquina y reacciona a la app, una
+ //  gramática de salida para cuando algo se elimina, y la placa de
+ //  privacidad. Todo con la misma paleta y los mismos tokens de la
+ //  Tanda 3: no se agrega ni un color ni una curva nueva.
+   ══════════════════════════════════════════════════════════════════ */
+
+/* ── 30 ── El mecanismo de fondo ────────────────────────────────────
+   Sigue la columna de la app (no la ventana entera) para que en compu
+   los engranajes enmarquen el contenido en vez de irse a las esquinas.
+   Queda por debajo de todo: z-index 0, sin eventos de puntero. */
+#mech{
+  position:fixed;top:0;bottom:0;left:50%;
+  transform:translateX(-50%) translate3d(var(--mech-shift,0px),0,0);
+  width:100%;max-width:var(--max);
+  z-index:0;pointer-events:none;overflow:hidden;
+  contain:strict;                 /* el fondo no invalida el layout de la app */
+}
+/* El slot manda la POSICIÓN y el parallax; el SVG de adentro, el GIRO.
+   data-depth en el HTML dice cuánto se desplaza cada uno con el scroll:
+   distinto para cada pieza es lo que produce la sensación de profundidad
+   (el de atrás se mueve menos, el de adelante más, el tercero al revés). */
+.gear-slot{
+  position:absolute;display:block;line-height:0;
+  transform:translate3d(0,var(--py,0px),0);
+  will-change:transform;
+}
+.gear,.mech-arm{
+  display:block;width:100%;height:auto;overflow:visible;
+  fill:none;stroke:var(--brass);stroke-width:2.4;stroke-linejoin:round;
+  opacity:var(--mech-op);
+  transition:opacity .6s var(--ease-emph),filter .6s var(--ease-emph);
+}
+.gear{animation:gearSpin var(--gear-dur,240s) linear infinite;
+  animation-direction:var(--gear-dir,normal);}
+@keyframes gearSpin{to{transform:rotate(360deg);}}
+
+/* Engranados: centros a 199 px, radios primitivos 2:1 (24 y 12 dientes).
+   Las duraciones respetan esa relación (72 s y 36 s) porque si no, el ojo
+   nota que los dientes "patinan" aunque no sepa explicar por qué.
+   Nota de calibración: la primera versión giraba a 240 s = 1,5°/s. Gira,
+   pero el ojo no registra un movimiento tan lento: parecía una calcomanía.
+   A 5°/s y 10°/s se lee como una máquina andando sin robar atención. */
+.s1{width:300px;right:-110px;top:-120px;}
+.s1 .gear{--gear-dur:72s;}
+.s3{width:167px;right:119px;top:60px;}
+.s3 .gear{--gear-dur:36s;--gear-dir:reverse;}
+.s2{width:210px;left:-86px;bottom:14%;}
+.s2 .gear{--gear-dur:55s;--gear-dir:reverse;}
+
+/* Péndulo: cuelga arriba a la izquierda y oscila desde su pivote. */
+.pendulum{width:60px;left:9%;top:-26px;}
+.mech-arm{
+  stroke-width:3.2;opacity:calc(var(--mech-op) * .85);
+  transform-origin:50% 3.3%;      /* el pivote, no el centro */
+  animation:armSwing 7.2s cubic-bezier(.45,0,.55,1) infinite alternate;
+}
+@keyframes armSwing{
+  from{transform:rotate(-6.5deg);}
+  to{transform:rotate(6.5deg);}
+}
+
+/* Cuando el mecanismo trabaja, el latón se enciende. Nada se mueve de
+   golpe: solo sube la presencia de lo que ya estaba ahí. */
+body.mech-working .gear,body.mech-working .mech-arm{
+  opacity:var(--mech-op-work);filter:drop-shadow(0 0 7px rgba(232,184,74,.22));}
+body.mech-alert .gear,body.mech-alert .mech-arm{
+  opacity:var(--mech-op-alert);filter:drop-shadow(0 0 10px rgba(232,184,74,.34));}
+
+/* La máquina se reacomoda al cambiar de sección: un empujón de 7px en el
+   sentido del viaje. Casi no se percibe, pero hace que el fondo se sienta
+   parte del movimiento y no una calcomanía pegada atrás. */
+#mech{transition:transform .6s var(--ease-glide);}
+
+/* Vaho de caldera: una luz tibia que deriva muy lento. Da la sensación
+   de que atrás hay algo encendido. */
+.mech-haze{
+  position:absolute;left:-30%;top:-10%;width:160%;height:120%;
+  background:radial-gradient(45% 32% at 50% 50%,rgba(232,184,74,0.085),transparent 70%);
+  animation:hazeDrift 54s ease-in-out infinite alternate;
+}
+@keyframes hazeDrift{
+  from{transform:translate3d(-6%,4%,0) scale(1);}
+  to{transform:translate3d(8%,-6%,0) scale(1.14);}
+}
+
+/* Pavesas: seis, no sesenta. Suben, se apagan y vuelven a empezar. */
+.mote{
+  position:absolute;bottom:-12px;width:3px;height:3px;border-radius:50%;
+  background:rgba(240,196,110,0.75);filter:blur(1px);opacity:0;
+  animation:moteRise var(--mote-dur,20s) linear infinite;
+  animation-delay:var(--mote-delay,0s);
+}
+@keyframes moteRise{
+  0%{opacity:0;transform:translate3d(0,0,0) scale(.7);}
+  12%{opacity:.5;}
+  70%{opacity:.32;}
+  100%{opacity:0;transform:translate3d(var(--mote-x,14px),-92vh,0) scale(1.15);}
+}
+.m1{left:12%;--mote-dur:21s;--mote-delay:0s;--mote-x:18px;}
+.m2{left:28%;--mote-dur:27s;--mote-delay:5s;--mote-x:-22px;}
+.m3{left:47%;--mote-dur:24s;--mote-delay:11s;--mote-x:12px;}
+.m4{left:63%;--mote-dur:30s;--mote-delay:3s;--mote-x:-14px;}
+.m5{left:79%;--mote-dur:23s;--mote-delay:16s;--mote-x:20px;}
+.m6{left:91%;--mote-dur:28s;--mote-delay:8s;--mote-x:-10px;}
+
+/* ── 31 ── Salida de lo que se elimina ──────────────────────────────
+   Antes, borrar algo lo hacía desaparecer de un cuadro al otro: la lista
+   daba un salto y no quedaba claro qué se fue. Ahora la tarjeta se va
+   hacia la derecha mientras la lista se cierra sobre el hueco. La clase
+   pone la transición; JS escribe los valores finales (ver dismissCard). */
+.dismissing{
+  overflow:hidden !important;
+  animation:none !important;
+  pointer-events:none;
+  transition:height .26s var(--ease-exit),opacity .19s linear,
+             transform .26s var(--ease-exit),margin .26s var(--ease-exit),
+             padding .26s var(--ease-exit);
+}
+
+/* ── 32 ── El sello de latón ────────────────────────────────────────
+   Actualizar una carga a "hoy" es estampar una fecha. La animación es
+   literalmente eso: el sello baja, golpea y rebota apenas. */
+@keyframes stampHit{
+  0%{transform:scale(1.55);opacity:0;}
+  40%{transform:scale(.95);opacity:1;}
+  62%{transform:scale(1.04);}
+  100%{transform:scale(1);opacity:1;}
+}
+.stamped{animation:stampHit .42s var(--ease-spring);}
+.stamped-glow{animation:stampGlow .7s var(--ease-glide);}
+@keyframes stampGlow{
+  0%{box-shadow:0 0 0 0 rgba(232,184,74,.5);}
+  100%{box-shadow:0 0 0 14px rgba(232,184,74,0);}
+}
+
+/* ── 33 ── Reparto del lookbook ─────────────────────────────────────
+   Generar outfits es repartir cartas: el naipe entra ladeado y se
+   acomoda. Solo al generar, no en cada render. */
+@keyframes dealIn{
+  0%{opacity:0;transform:translate3d(0,26px,0) rotate(-3.2deg) scale(.95);}
+  60%{opacity:1;}
+  100%{opacity:1;transform:none;}
+}
+.dealing{animation:dealIn .52s var(--ease-spring);}
+
+/* ── 34 ── Sello de privacidad en la cabecera ───────────────────────
+   Un botón discreto, del mismo material que el resto. Su engranaje gira
+   despacio al tocarlo: el mismo lenguaje del fondo, a escala de dedo. */
+.btn-seal{
+  width:46px;height:46px;border-radius:14px;border:1px solid var(--line);
+  background:rgba(60,40,15,0.28);color:var(--brass);
+  cursor:pointer;display:inline-flex;align-items:center;justify-content:center;
+  margin-right:8px;transition:color var(--dur-2) ease,border-color var(--dur-2) ease,transform var(--dur-1) ease;
+}
+.btn-seal .ico{transition:transform .9s var(--ease-glide);}
+.btn-seal:hover{color:var(--amber);border-color:var(--line-strong);}
+.btn-seal:active{transform:scale(.92);}
+.btn-seal:active .ico{transform:rotate(60deg);}
+.header{align-items:center;}
+
+/* ── 35 ── La placa de privacidad ───────────────────────────────────
+   Se lee como una placa grabada: filas a dos columnas, sin iconos ni
+   adornos. Lo que importa acá es el dato, no el efecto. */
+.mech-sheet{max-height:86vh;overflow-y:auto;}
+.mech-lead{font-size:14px;line-height:1.6;color:var(--muted);margin:0 0 18px;}
+.mech-plate{
+  border:1px solid var(--line);border-radius:14px;overflow:hidden;
+  background:rgba(30,20,8,0.42);margin-bottom:20px;
+}
+.mech-row{
+  display:flex;align-items:baseline;justify-content:space-between;gap:14px;
+  padding:12px 14px;border-bottom:1px solid var(--line);
+}
+.mech-row:last-child{border-bottom:none;}
+.mech-row-what{font-size:13.5px;color:var(--ink);}
+.mech-row-where{font-size:11.5px;color:var(--faint);text-align:right;flex-shrink:0;}
+.mech-meter-label{
+  display:flex;align-items:baseline;justify-content:space-between;gap:12px;
+  font-size:12px;color:var(--faint);margin-bottom:8px;
+}
+.mech-meter-val{font-family:var(--mono-font);font-variant-numeric:tabular-nums;color:var(--amber);font-size:13px;}
+.mech-meter{
+  height:6px;border-radius:4px;background:rgba(200,150,60,0.12);
+  overflow:hidden;margin-bottom:20px;
+}
+.mech-meter-fill{
+  display:block;height:100%;width:0;border-radius:4px;
+  background:linear-gradient(90deg,var(--brass),var(--amber));
+  transition:width 1.1s var(--ease-glide);
+}
+.mech-facts{list-style:none;margin:0 0 22px;padding:0;}
+.mech-facts li{
+  position:relative;padding-left:18px;margin-bottom:9px;
+  font-size:13px;line-height:1.5;color:var(--muted);
+}
+.mech-facts li::before{
+  content:'';position:absolute;left:0;top:7px;width:6px;height:6px;
+  border-radius:50%;border:1px solid var(--brass);
+}
+
+
+/* ── 37 ── La firma de cada pestaña ─────────────────────────────────
+   Cada sección saluda a su manera cada vez que se abre: la campana se
+   sacude, el cronómetro da una vuelta, la pesa hace una repetición. Es
+   medio segundo y no se repite sola, así que no cansa — pero le da a
+   cada pestaña una identidad que el texto solo no da.
+   El gesto termina siempre en translateY(-3px), que es donde vive el
+   ícono activo: así no hay salto al terminar. */
+#tab-alarms.sig .tab-icon{animation:sigBell .95s var(--ease-spring);}
+@keyframes sigBell{
+  0%{transform:translateY(-3px) rotate(0);}
+  18%{transform:translateY(-3px) rotate(-15deg);}
+  38%{transform:translateY(-3px) rotate(12deg);}
+  56%{transform:translateY(-3px) rotate(-7deg);}
+  74%{transform:translateY(-3px) rotate(4deg);}
+  100%{transform:translateY(-3px) rotate(0);}
+}
+#tab-stopwatch.sig .tab-icon{animation:sigSpin .9s var(--ease-glide);}
+@keyframes sigSpin{
+  from{transform:translateY(-3px) rotate(0);}
+  to{transform:translateY(-3px) rotate(360deg);}
+}
+/* La pesa hace una repetición: baja, sube y aterriza. */
+#tab-gym.sig .tab-icon{animation:sigLift .95s var(--ease-spring);}
+@keyframes sigLift{
+  0%{transform:translateY(-3px) scaleX(1);}
+  22%{transform:translateY(3px) scaleX(1.06);}
+  55%{transform:translateY(-9px) scaleX(.96);}
+  78%{transform:translateY(-1px) scaleX(1.02);}
+  100%{transform:translateY(-3px) scaleX(1);}
+}
+/* El billete se voltea; la hoja del calendario pasa. */
+#tab-registro.sig .tab-icon{animation:sigFlip .8s var(--ease-glide);}
+@keyframes sigFlip{
+  0%{transform:translateY(-3px) rotateY(0);}
+  100%{transform:translateY(-3px) rotateY(360deg);}
+}
+#tab-calendario.sig .tab-icon{animation:sigPage .8s var(--ease-spring);}
+@keyframes sigPage{
+  0%{transform:translateY(-3px) perspective(60px) rotateX(0);}
+  45%{transform:translateY(-3px) perspective(60px) rotateX(-62deg);}
+  100%{transform:translateY(-3px) perspective(60px) rotateX(0);}
+}
+/* La percha se balancea. */
+#tab-armario.sig .tab-icon{animation:sigSway .95s var(--ease-spring);}
+@keyframes sigSway{
+  0%{transform:translateY(-3px) rotate(0);}
+  25%{transform:translateY(-3px) rotate(9deg);}
+  55%{transform:translateY(-3px) rotate(-6deg);}
+  80%{transform:translateY(-3px) rotate(3deg);}
+  100%{transform:translateY(-3px) rotate(0);}
+}
+@media (prefers-reduced-motion:reduce){
+  .tab-btn.sig .tab-icon{animation:none !important;}
+}
+
+/* ── 36 ── Accesibilidad de la tanda 4 ──────────────────────────────
+   Sin movimiento: la máquina sigue ahí, quieta. El fondo es parte de la
+   identidad de Vesta, así que no se borra; solo deja de girar. */
+@media (prefers-reduced-motion:reduce){
+  .gear,.mech-arm{animation:none;}
+  .gear-slot{transform:none !important;}
+  #mech{transition:none;}
+  .mech-haze,.mote{animation:none;}
+  .mote{opacity:0;}
+  .dismissing{transition:none;}
+  .stamped,.stamped-glow,.dealing{animation:none;}
 }
 
 /* ==========================================================================
@@ -998,6 +1526,59 @@ body.theme-light .reg-field-group{
 </head>
 <body>
 <div id="bg"></div>
+
+<!-- ── El mecanismo ──────────────────────────────────────────────────
+     El fondo de Vesta es una máquina, no una textura. Tres engranajes
+     dibujados con geometría real (dientes, radios, cubo) que giran muy
+     despacio detrás del contenido, a un 5% de opacidad: no se miran, se
+     sienten. El grande y el chico están engranados de verdad — 24 y 12
+     dientes, mismo módulo — así que el chico gira exactamente al doble
+     de velocidad y en sentido contrario. Si girara a cualquier otra
+     velocidad, el ojo lo notaría sin saber por qué.
+     Lo que lo vuelve distinto de un adorno: el mecanismo responde a la
+     app. Se acelera cuando el cronómetro corre, se enciende cuando algo
+     se guarda y late cuando una alarma suena (ver el módulo Mech). -->
+<div id="mech" aria-hidden="true">
+  <!-- Vaho de caldera: una luz tibia que deriva. Da la sensación de que
+       atrás hay algo encendido. -->
+  <div class="mech-haze"></div>
+
+  <!-- Engranajes. Cada uno vive en un "slot": el slot se desplaza con el
+       scroll (parallax) y el <svg> de adentro gira. Si giro y desplazo
+       fueran el mismo elemento, una transformación pisaría a la otra.
+       El grande (24 dientes) y el chico (12) comparten módulo y están a
+       la distancia exacta de sus radios primitivos: engranan de verdad,
+       por eso el chico gira al doble y al revés: 72 s contra 36 s. Si
+       cambiás un tamaño, cambiá también la duración o el engrane deja
+       de leerse. Para que se vean más o menos, no toques esto: movés
+       --mech-op en :root y listo. -->
+  <span class="gear-slot s1" data-depth="0.055">
+    <svg class="gear" viewBox="-104 -104 208 208" data-dur="72" data-dir="1" data-anim="spin"><path d="M0.0 -100.0L8.9 -99.6L11.0 -83.3L18.3 -82.0L25.9 -96.6L34.4 -93.9L32.1 -77.6L38.9 -74.4L50.0 -86.6L57.5 -81.8L51.1 -66.6L56.9 -61.8L70.7 -70.7L76.7 -64.1L66.6 -51.1L70.9 -45.0L86.6 -50.0L90.7 -42.1L77.6 -32.1L80.2 -25.1L96.6 -25.9L98.5 -17.2L83.3 -11.0L83.9 -3.5L100.0 0.0L99.6 8.9L83.3 11.0L82.0 18.3L96.6 25.9L93.9 34.4L77.6 32.1L74.4 38.9L86.6 50.0L81.8 57.5L66.6 51.1L61.8 56.9L70.7 70.7L64.1 76.7L51.1 66.6L45.0 70.9L50.0 86.6L42.1 90.7L32.1 77.6L25.1 80.2L25.9 96.6L17.2 98.5L11.0 83.3L3.5 83.9L-0.0 100.0L-8.9 99.6L-11.0 83.3L-18.3 82.0L-25.9 96.6L-34.4 93.9L-32.1 77.6L-38.9 74.4L-50.0 86.6L-57.5 81.8L-51.1 66.6L-56.9 61.8L-70.7 70.7L-76.7 64.1L-66.6 51.1L-70.9 45.0L-86.6 50.0L-90.7 42.1L-77.6 32.1L-80.2 25.1L-96.6 25.9L-98.5 17.2L-83.3 11.0L-83.9 3.5L-100.0 0.0L-99.6 -8.9L-83.3 -11.0L-82.0 -18.3L-96.6 -25.9L-93.9 -34.4L-77.6 -32.1L-74.4 -38.9L-86.6 -50.0L-81.8 -57.5L-66.6 -51.1L-61.8 -56.9L-70.7 -70.7L-64.1 -76.7L-51.1 -66.6L-45.0 -70.9L-50.0 -86.6L-42.1 -90.7L-32.1 -77.6L-25.1 -80.2L-25.9 -96.6L-17.2 -98.5L-11.0 -83.3L-3.5 -83.9Z"/><circle cx="0" cy="0" r="65.5"/><circle cx="0" cy="0" r="20.0"/><path d="M3.4 -21.3 L-3.4 -21.3 L-5.8 -65.3 L5.8 -65.3 ZM20.2 -7.7 L16.7 -13.6 L53.6 -37.6 L59.4 -27.6 ZM16.7 13.6 L20.2 7.7 L59.4 27.6 L53.6 37.6 ZM-3.4 21.3 L3.4 21.3 L5.8 65.3 L-5.8 65.3 ZM-20.2 7.7 L-16.7 13.6 L-53.6 37.6 L-59.4 27.6 ZM-16.7 -13.6 L-20.2 -7.7 L-59.4 -27.6 L-53.6 -37.6 Z"/></svg>
+  </span>
+  <span class="gear-slot s3" data-depth="0.105">
+    <svg class="gear" viewBox="-58 -58 116 116" data-dur="36" data-dir="-1" data-anim="spin"><path d="M0.0 -54.0L9.6 -53.1L9.8 -36.7L16.2 -34.4L27.0 -46.8L34.9 -41.2L26.9 -26.9L31.2 -21.7L46.8 -27.0L50.8 -18.3L36.7 -9.8L37.9 -3.2L54.0 -0.0L53.1 9.6L36.7 9.8L34.4 16.2L46.8 27.0L41.2 34.9L26.9 26.9L21.7 31.2L27.0 46.8L18.3 50.8L9.8 36.7L3.2 37.9L0.0 54.0L-9.6 53.1L-9.8 36.7L-16.2 34.4L-27.0 46.8L-34.9 41.2L-26.9 26.9L-31.2 21.7L-46.8 27.0L-50.8 18.3L-36.7 9.8L-37.9 3.2L-54.0 -0.0L-53.1 -9.6L-36.7 -9.8L-34.4 -16.2L-46.8 -27.0L-41.2 -34.9L-26.9 -26.9L-21.7 -31.2L-27.0 -46.8L-18.3 -50.8L-9.8 -36.7L-3.2 -37.9Z"/><circle cx="0" cy="0" r="29.6"/><circle cx="0" cy="0" r="11.0"/><path d="M1.9 -11.7 L-1.9 -11.7 L-2.6 -29.5 L2.6 -29.5 ZM11.7 1.9 L11.7 -1.9 L29.5 -2.6 L29.5 2.6 ZM-1.9 11.7 L1.9 11.7 L2.6 29.5 L-2.6 29.5 ZM-11.7 -1.9 L-11.7 1.9 L-29.5 2.6 L-29.5 -2.6 Z"/></svg>
+  </span>
+  <span class="gear-slot s2" data-depth="-0.075">
+    <svg class="gear" viewBox="-70 -70 140 140" data-dur="55" data-dir="-1" data-anim="spin"><path d="M0.0 -66.0L8.8 -65.4L10.5 -53.0L17.5 -51.1L25.3 -61.0L33.1 -57.1L30.0 -44.9L35.7 -40.5L46.7 -46.7L52.5 -40.0L44.9 -30.0L48.5 -23.8L61.0 -25.3L63.8 -16.9L53.0 -10.5L53.9 -3.4L66.0 0.0L65.4 8.8L53.0 10.5L51.1 17.5L61.0 25.3L57.1 33.1L44.9 30.0L40.5 35.7L46.7 46.7L40.0 52.5L30.0 44.9L23.8 48.5L25.3 61.0L16.9 63.8L10.5 53.0L3.4 53.9L-0.0 66.0L-8.8 65.4L-10.5 53.0L-17.5 51.1L-25.3 61.0L-33.1 57.1L-30.0 44.9L-35.7 40.5L-46.7 46.7L-52.5 40.0L-44.9 30.0L-48.5 23.8L-61.0 25.3L-63.8 16.9L-53.0 10.5L-53.9 3.4L-66.0 -0.0L-65.4 -8.8L-53.0 -10.5L-51.1 -17.5L-61.0 -25.3L-57.1 -33.1L-44.9 -30.0L-40.5 -35.7L-46.7 -46.7L-40.0 -52.5L-30.0 -44.9L-23.8 -48.5L-25.3 -61.0L-16.9 -63.8L-10.5 -53.0L-3.4 -53.9Z"/><circle cx="0" cy="0" r="42.1"/><circle cx="0" cy="0" r="14.0"/><path d="M2.4 -14.9 L-2.4 -14.9 L-3.7 -42.0 L3.7 -42.0 ZM14.9 -2.3 L13.5 -6.9 L38.8 -16.5 L41.0 -9.4 ZM6.8 13.5 L10.7 10.7 L27.7 31.8 L21.7 36.1 ZM-10.7 10.7 L-6.8 13.5 L-21.7 36.1 L-27.7 31.8 ZM-13.5 -6.9 L-14.9 -2.3 L-41.0 -9.4 L-38.8 -16.5 Z"/></svg>
+  </span>
+
+  <!-- Péndulo regulador: lo que le da vida al fondo. Los engranajes giran
+       tan lento que casi no se ven moverse; el péndulo sí, y como cuelga
+       del mismo mecanismo también acelera cuando la app trabaja.
+       El pivote está arriba (transform-origin) y la varilla oscila ±6,5°. -->
+  <span class="gear-slot pendulum" data-depth="0.035">
+    <svg class="mech-arm" viewBox="-30 0 60 240" data-dur="7.2" data-anim="swing">
+      <circle cx="0" cy="8" r="4.5"/>
+      <path d="M0 8 L0 196"/>
+      <circle cx="0" cy="210" r="15"/>
+      <circle cx="0" cy="210" r="7"/>
+    </svg>
+  </span>
+
+  <!-- Pavesas: seis, no sesenta. -->
+  <span class="mote m1"></span><span class="mote m2"></span><span class="mote m3"></span>
+  <span class="mote m4"></span><span class="mote m5"></span><span class="mote m6"></span>
+</div>
 <div class="app">
 
   <!-- ALARMAS -->
@@ -1006,12 +1587,13 @@ body.theme-light .reg-field-group{
       <div class="header-left">
         <span class="label-top">ALARMA PERSONALIZADA</span>
       </div>
-      <button class="btn-add" onclick="openModal()">＋</button>
+      <button class="btn-seal" onclick="openMechSheet()" aria-label="Mecanismo y privacidad" data-icon="gear" data-icon-size="19"></button>
+      <button class="btn-add" onclick="openModal()" aria-label="Nueva alarma" data-icon="plus" data-icon-size="22"></button>
     </div>
 
     <div class="alarms-section">
       <div class="section-title">Mis alarmas</div>
-      <div id="alarmList"></div>
+      <div id="alarmList" class="stagger"></div>
       <div id="emptyState" class="empty-state">
         <div class="empty-icon">
           <svg viewBox="0 0 24 24" width="46" height="46" fill="none" stroke="currentColor" stroke-width="1.6"
@@ -1041,10 +1623,10 @@ body.theme-light .reg-field-group{
       <div class="sw-ring" id="swRing"></div>
     </div>
     <div class="sw-controls">
-      <button class="sw-btn sw-btn-stop" id="swStopBtn" onclick="swStop()" disabled>⏹</button>
-      <button class="sw-btn sw-btn-start" id="swStartBtn" onclick="swToggle()">▶</button>
+      <button class="sw-btn sw-btn-stop" id="swStopBtn" onclick="swStop()" disabled aria-label="Reiniciar"></button>
+      <button class="sw-btn sw-btn-start" id="swStartBtn" onclick="swToggle()" aria-label="Iniciar"></button>
     </div>
-    <div class="sw-laps" id="swLaps"></div>
+    <div class="sw-laps stagger" id="swLaps"></div>
   </div>
 
   <!-- PRESUPUESTO -->
@@ -1063,7 +1645,7 @@ body.theme-light .reg-field-group{
         <div class="donut-label" id="donutLabel">disponible</div>
       </div>
     </div>
-    <div class="donut-legend" id="budgetLegend" style="justify-content:center;flex-wrap:wrap;gap:8px;margin-bottom:14px;"></div>
+    <div class="donut-legend stagger" id="budgetLegend" style="justify-content:center;flex-wrap:wrap;gap:8px;margin-bottom:14px;"></div>
     <div class="reg-fields">
       <div class="reg-field-group" onclick="openBudgetModal()">
         <div class="reg-field-left">
@@ -1094,7 +1676,7 @@ body.theme-light .reg-field-group{
         <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>AGREGAR
       </button>
     </div>
-    <div id="expenseList" class="reg-fields" style="gap:8px;margin-bottom:20px;"></div>
+    <div id="expenseList" class="reg-fields stagger" style="gap:8px;margin-bottom:20px;"></div>
     <div id="expenseEmpty" style="text-align:center;color:rgba(180,140,80,0.3);font-size:clamp(12px,3.5vw,13px);padding:8px 0 20px;">Sin gastos registrados</div>
   </div>
 
@@ -1150,7 +1732,7 @@ body.theme-light .reg-field-group{
     <div class="cal-grid" id="calGrid"></div>
     <div class="cal-events-section">
       <div class="cal-events-title" id="calEventsTitle">Eventos</div>
-      <div id="calEventsList"></div>
+      <div id="calEventsList" class="stagger"></div>
     </div>
   </div>
 
@@ -1172,32 +1754,32 @@ body.theme-light .reg-field-group{
         <!-- LIBRERÍA -->
         <section class="aw-pane active" id="aw-pane-lib">
           <div class="aw-filters" id="awFilters"></div>
-          <div class="aw-grid" id="awGrid"></div>
+          <div class="aw-grid stagger pop" id="awGrid"></div>
         </section>
 
         <!-- ARMARIO / LOOKBOOK -->
         <section class="aw-pane" id="aw-pane-look">
           <div id="awLookCard"></div>
           <div class="aw-look-actions">
-            <button class="aw-btn ghost" onclick="awGenerate()">↻ Generar más opciones</button>
+            <button class="aw-btn ghost" onclick="awGenerate()" data-icon="refresh" data-icon-size="16">Generar más opciones</button>
           </div>
           <div id="awSaved"></div>
         </section>
       </div>
 
       <!-- Botón flotante (+) -->
-      <button class="aw-fab" id="awFab" onclick="awAddPhoto()" aria-label="Agregar prenda">+</button>
+      <button class="aw-fab" id="awFab" onclick="awAddPhoto()" aria-label="Agregar prenda" data-icon="plus" data-icon-size="26"></button>
 
       <!-- Hoja de selección de categoría -->
       <div class="aw-sheet-ov" id="awSheetOv" onclick="if(event.target===this)awCloseSheet()">
         <div class="aw-sheet">
           <div class="aw-sheet-grip"></div>
           <div class="aw-sheet-title">¿Qué prenda querés agregar?</div>
-          <button class="aw-sheet-opt" onclick="awPickFile('top','base')"><span class="ic">👕</span>Base (Camiseta / Camisa)</button>
-          <button class="aw-sheet-opt" onclick="awPickFile('top','outer')"><span class="ic">🧥</span>Capa Externa (Blazer / Abrigo)</button>
-          <button class="aw-sheet-opt" onclick="awPickFile('bottom','bottom')"><span class="ic">👖</span>Parte Inferior</button>
-          <button class="aw-sheet-opt" onclick="awPickFile('shoes','shoes')"><span class="ic">👞</span>Calzado</button>
-          <button class="aw-sheet-opt" onclick="awPickFile('acc','acc')"><span class="ic">⌚</span>Accesorios</button>
+          <button class="aw-sheet-opt" onclick="awPickFile('top','base')"><span class="ic" data-icon="shirt"></span>Base (Camiseta / Camisa)</button>
+          <button class="aw-sheet-opt" onclick="awPickFile('top','outer')"><span class="ic" data-icon="jacket"></span>Capa Externa (Blazer / Abrigo)</button>
+          <button class="aw-sheet-opt" onclick="awPickFile('bottom','bottom')"><span class="ic" data-icon="pants"></span>Parte Inferior</button>
+          <button class="aw-sheet-opt" onclick="awPickFile('shoes','shoes')"><span class="ic" data-icon="shoe"></span>Calzado</button>
+          <button class="aw-sheet-opt" onclick="awPickFile('acc','acc')"><span class="ic" data-icon="watch"></span>Accesorios</button>
         </div>
       </div>
     </div>
@@ -1218,7 +1800,7 @@ body.theme-light .reg-field-group{
     <!-- 1) Gestión de ejercicios diarios -->
     <section class="gym-pane active" id="gym-pane-routine">
       <div class="gym-section-label">Rutina por día</div>
-      <div id="gymRoutineList"></div>
+      <div id="gymRoutineList" class="stagger"></div>
       <div id="gymRoutineEmpty" class="gym-empty">
         <div class="gym-empty-icon">
           <svg viewBox="0 0 24 24" width="40" height="40" fill="none" stroke="currentColor" stroke-width="1.6"
@@ -1231,20 +1813,14 @@ body.theme-light .reg-field-group{
           </svg>
         </div>
         <div>Tocá <strong>Agregar Ejercicio</strong><br>para armar tu rutina de hoy</div>
-        <div class="gym-empty-icon">
-          <svg viewBox="0 0 24 24" width="40" height="40" fill="none" stroke="currentColor" stroke-width="1.6"
-            stroke-linecap="round" stroke-linejoin="round">
-            <path d="M3 17l6-6 4 4 8-8"></path>
-            <path d="M15 7h6v6"></path>
-          </svg>
-        </div>
-      <button class="gym-add-btn" onclick="gymAddExercise()">+ Agregar Ejercicio</button>
+      </div>
+      <button class="gym-add-btn" onclick="gymAddExercise()" data-icon="plus" data-icon-size="16">Agregar Ejercicio</button>
     </section>
 
     <!-- 2) Historial de cargas -->
     <section class="gym-pane" id="gym-pane-loads">
       <div class="gym-section-label">Pesos máximos (PRs)</div>
-      <div id="gymLoadsList" class="gym-loads-grid"></div>
+      <div id="gymLoadsList" class="gym-loads-grid stagger"></div>
       <div id="gymLoadsEmpty" class="gym-empty">
         <div class="gym-empty-icon">
           <svg viewBox="0 0 24 24" width="40" height="40" fill="none" stroke="currentColor" stroke-width="1.6"
@@ -1255,12 +1831,13 @@ body.theme-light .reg-field-group{
         </div>
         <div>Sin registros todavía.<br>Tocá <strong>Agregar Registro</strong> para guardar un peso máximo</div>
       </div>
-      <button class="gym-add-btn" onclick="gymAddLoad()">+ Agregar Registro</button>
+      <button class="gym-add-btn" onclick="gymAddLoad()" data-icon="plus" data-icon-size="16">Agregar Registro</button>
     </section>
   </div>
 
   <!-- Tab bar -->
   <div class="tab-bar">
+    <span class="tab-ink" id="tabInk" aria-hidden="true"></span>
     <button class="tab-btn active" id="tab-alarms" onclick="switchTab('alarms')">
       <span class="tab-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="13" r="8"/><path d="M12 9v4l2.5 2.5"/><path d="M6.3 4.3 4.2 6.4"/><path d="M17.7 4.3l2.1 2.1"/><path d="M9 2h6"/></svg></span>Alarmas
     </button>
@@ -1322,7 +1899,7 @@ body.theme-light .reg-field-group{
     </div>
     <div class="field-label">Sonido</div>
     <label class="sound-area" for="fileInput" style="cursor:pointer;">
-      <span class="sound-icon">🎵</span>
+      <span class="sound-icon" data-icon="music"></span>
       <span class="sound-name" id="soundName">Tocá para elegir audio o video</span>
     </label>
     <input type="file" id="fileInput" accept="audio/*,video/mp4,video/quicktime,video/x-matroska,.mp4,.mov,.mkv,.m4a,.aac" onchange="handleFileSelect(event)" style="display:none;position:absolute;width:0;height:0;opacity:0;">
@@ -1346,13 +1923,157 @@ body.theme-light .reg-field-group{
   </div>
 </div>
 
+<!-- Hoja "Mecanismo": qué guarda Vesta, dónde, y qué no hace -->
+<div class="modal-overlay" id="mechOverlay" onclick="if(event.target===this)closeMechSheet()">
+  <div class="modal mech-sheet">
+    <div class="modal-handle"></div>
+    <div class="modal-title">MECANISMO</div>
+    <p class="mech-lead">Vesta corre entera dentro de este dispositivo. No hay cuentas, ni servidores, ni analítica: nada de lo que escribís sale de acá.</p>
+
+    <div class="mech-plate">
+      <div class="mech-row">
+        <span class="mech-row-what">Alarmas y sus sonidos</span>
+        <span class="mech-row-where">almacenamiento local</span>
+      </div>
+      <div class="mech-row">
+        <span class="mech-row-what">Sueldo, gastos y eventos</span>
+        <span class="mech-row-where">almacenamiento local</span>
+      </div>
+      <div class="mech-row">
+        <span class="mech-row-what">Fotos del clóset y rutinas</span>
+        <span class="mech-row-where">base de datos del navegador</span>
+      </div>
+    </div>
+
+    <div class="mech-meter-label">
+      <span>Espacio usado en este dispositivo</span>
+      <span class="mech-meter-val" id="mechUsage">—</span>
+    </div>
+    <div class="mech-meter"><span class="mech-meter-fill" id="mechFill"></span></div>
+
+    <ul class="mech-facts">
+      <li id="mechFactOffline">Funciona completa en modo avión</li>
+      <li>Las notificaciones las arma el propio dispositivo, sin pasar por nadie</li>
+      <li>La página tiene prohibido abrir conexiones salientes</li>
+    </ul>
+
+    <div class="modal-btns">
+      <button class="btn-cancel" onclick="closeMechSheet()">Cerrar</button>
+    </div>
+  </div>
+</div>
+
 <div class="notif-banner" id="notifBanner"></div>
 
 <script>
 // ══════════════════════════════════════════════════════════════════
+// 0) BASE — iconos, caché de nodos y preferencias de movimiento
+// Todo lo de abajo se define antes que el resto del JS porque lo usan
+// funciones que corren durante el arranque (render inicial, banners).
+// ══════════════════════════════════════════════════════════════════
+
+/* ── Preferencia de movimiento ─────────────────────────────────────
+   Una sola fuente de verdad para "¿puedo animar?". El CSS ya respeta
+   prefers-reduced-motion; esto es para las animaciones que maneja JS
+   (conteo de cifras, ripple, dibujado del anillo). */
+const _mqMotion=window.matchMedia('(prefers-reduced-motion: reduce)');
+const MOTION={ok:!_mqMotion.matches};
+_mqMotion.addEventListener('change',e=>{MOTION.ok=!e.matches;});
+
+/* ── Caché de nodos ────────────────────────────────────────────────
+   EL.swTime equivale a document.getElementById('swTime') pero busca en
+   el DOM una sola vez. Importa en el cronómetro, que reescribe texto 60
+   veces por segundo, y en el banner, que se llama desde toda la app.
+   Si el nodo todavía no existe no se cachea el nulo: se reintenta. */
+const EL=new Proxy({},{
+  get(cache,id){
+    const hit=cache[id];
+    if(hit&&hit.isConnected)return hit;
+    return (cache[id]=document.getElementById(id));
+  }
+});
+
+/* ── Iconos ────────────────────────────────────────────────────────
+   Vesta no usa emojis en ninguna parte de la interfaz: cada símbolo es
+   un SVG de trazo 1.8 que hereda el color del elemento que lo contiene.
+   Motivo: los emojis los dibuja el sistema operativo, así que cambian
+   de forma y de color entre Android, iOS y Windows y nunca combinan con
+   la paleta ámbar. Estos, sí.
+   Uso: ICON.trash(18) en plantillas, o data-icon="trash" en el HTML. */
+const ICON=(()=>{
+  const wrap=(body,size)=>'<svg class="ico" viewBox="0 0 24 24" width="'+(size||18)+'" height="'+(size||18)+
+    '" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">'+body+'</svg>';
+  const defs={
+    play:'<path d="M8.4 4.9 19 12 8.4 19.1z" fill="currentColor"/>',
+    pause:'<path d="M9.4 5v14M14.6 5v14" stroke-width="2.6"/>',
+    stop:'<rect x="6.8" y="6.8" width="10.4" height="10.4" rx="2.4" fill="currentColor" stroke="none"/>',
+    plus:'<path d="M12 5v14M5 12h14" stroke-width="2.2"/>',
+    trash:'<path d="M4.2 6.8h15.6"/><path d="M9.6 6.8V5.1A1.3 1.3 0 0 1 10.9 3.8h2.2a1.3 1.3 0 0 1 1.3 1.3v1.7"/><path d="m6.6 6.8.9 12a1.8 1.8 0 0 0 1.8 1.7h5.4a1.8 1.8 0 0 0 1.8-1.7l.9-12"/><path d="M10.4 10.6v6.2M13.6 10.6v6.2"/>',
+    refresh:'<path d="M20.3 12a8.3 8.3 0 1 1-2.6-6"/><path d="M18.4 2.6v3.9h-3.9"/>',
+    heart:'<path d="M12 20.2S4.6 16 4.6 10.7A3.9 3.9 0 0 1 12 8.6a3.9 3.9 0 0 1 7.4 2.1c0 5.3-7.4 9.5-7.4 9.5z"/>',
+    check:'<path d="M20 6.4 9.3 17.1 4 11.8" stroke-width="2.2"/>',
+    alert:'<path d="M12 3.7 2.9 19.3a1.2 1.2 0 0 0 1 1.8h16.2a1.2 1.2 0 0 0 1-1.8z"/><path d="M12 9.4v4.3"/><path d="M12 17.3h.01" stroke-width="2.2"/>',
+    info:'<circle cx="12" cy="12" r="8.7"/><path d="M12 11.2v5.1"/><path d="M12 7.7h.01" stroke-width="2.2"/>',
+    bell:'<path d="M18 9.4a6 6 0 1 0-12 0c0 5.1-2.1 6.2-2.1 6.2h16.2S18 14.5 18 9.4"/><path d="M13.7 19.4a2 2 0 0 1-3.4 0"/>',
+    calendar:'<rect x="3.2" y="4.6" width="17.6" height="16.2" rx="3"/><path d="M3.2 9.6h17.6"/><path d="M8.2 2.7v3.6M15.8 2.7v3.6"/>',
+    music:'<path d="M9.1 17.6V6.3l10-2v11"/><circle cx="6.5" cy="17.7" r="2.6"/><circle cx="16.5" cy="15.4" r="2.6"/>',
+    video:'<rect x="2.6" y="5.9" width="13.2" height="12.2" rx="2.8"/><path d="m21.4 8.1-5.6 3.9 5.6 3.9z"/>',
+    shirt:'<path d="M8.6 3.2 12 5.8l3.4-2.6 4.4 2.3-1.7 4.2-2.1-.8v11.9H8V8.9l-2.1.8L4.2 5.5z"/>',
+    jacket:'<path d="M9.2 3.2 5.2 5.5v15.3h13.6V5.5l-4-2.3L12 6.2z"/><path d="M12 6.2v14.6"/>',
+    pants:'<path d="M7 3.2h10l1 17.6h-4.1L12 10.9l-1.9 9.9H6z"/>',
+    shoe:'<path d="M3.2 16.4h9.6l4.1 1.7h3.9v1.5a1.2 1.2 0 0 1-1.2 1.2H3.2z"/><path d="M3.2 16.4V9.1h3.1l1.6 2.3 2.4.9"/>',
+    gear:'<circle cx="12" cy="12" r="3.1"/><path d="M19.5 14.4a1.6 1.6 0 0 0 .3 1.8l.1.1a1.9 1.9 0 1 1-2.7 2.7l-.1-.1a1.6 1.6 0 0 0-1.8-.3 1.6 1.6 0 0 0-1 1.5v.2a1.9 1.9 0 1 1-3.8 0v-.1a1.6 1.6 0 0 0-1-1.5 1.6 1.6 0 0 0-1.8.3l-.1.1a1.9 1.9 0 1 1-2.7-2.7l.1-.1a1.6 1.6 0 0 0 .3-1.8 1.6 1.6 0 0 0-1.5-1h-.2a1.9 1.9 0 1 1 0-3.8h.1a1.6 1.6 0 0 0 1.5-1 1.6 1.6 0 0 0-.3-1.8l-.1-.1a1.9 1.9 0 1 1 2.7-2.7l.1.1a1.6 1.6 0 0 0 1.8.3h.1a1.6 1.6 0 0 0 1-1.5v-.2a1.9 1.9 0 1 1 3.8 0v.1a1.6 1.6 0 0 0 1 1.5 1.6 1.6 0 0 0 1.8-.3l.1-.1a1.9 1.9 0 1 1 2.7 2.7l-.1.1a1.6 1.6 0 0 0-.3 1.8v.1a1.6 1.6 0 0 0 1.5 1h.2a1.9 1.9 0 1 1 0 3.8h-.1a1.6 1.6 0 0 0-1.5 1z"/>',
+    watch:'<circle cx="12" cy="12" r="4.8"/><path d="M12 10v2.2l1.5 1"/><path d="m9.3 7.6.4-4.4h4.6l.4 4.4M9.3 16.4l.4 4.4h4.6l.4-4.4"/>'
+  };
+  const api={};
+  for(const k in defs) api[k]=(size)=>wrap(defs[k],size);
+  api.has=(k)=>Object.prototype.hasOwnProperty.call(defs,k);
+  return api;
+})();
+
+/* Rellena los iconos declarados en el HTML con data-icon="nombre". */
+function hydrateIcons(root){
+  (root||document).querySelectorAll('[data-icon]').forEach(el=>{
+    const name=el.getAttribute('data-icon');
+    if(!ICON.has(name))return;
+    const svg=ICON[name](parseInt(el.getAttribute('data-icon-size'),10)||18);
+    // Si el elemento ya tiene texto (ej. "Agregar Ejercicio"), el icono se
+    // antepone; si está vacío, lo llena. Nunca pisa la etiqueta.
+    if(el.firstChild)el.insertAdjacentHTML('afterbegin',svg);
+    else el.innerHTML=svg;
+    el.removeAttribute('data-icon');
+  });
+}
+
+/* ── Conteo de cifras ──────────────────────────────────────────────
+   Referencia: los importes de Stripe. En vez de saltar de ₡300.000 a
+   ₡280.000, el número recorre la diferencia: el ojo ve CUÁNTO cambió,
+   no solo que cambió. Curva expo-out para que frene al llegar. */
+function animateMoney(el,to){
+  if(!el)return;
+  cancelAnimationFrame(el._raf);
+  if(to===null||isNaN(to)){el.textContent='—';el._numVal=null;return;}
+  const from=(typeof el._numVal==='number')?el._numVal:to;
+  el._numVal=to;
+  if(!MOTION.ok||Math.round(from)===Math.round(to)){el.textContent=fmtMoney(to);return;}
+  const wrap=el.closest('.donut-wrap');
+  if(wrap)wrap.classList.add('counting');
+  const t0=performance.now(),dur=640;
+  const step=(now)=>{
+    const p=Math.min(1,(now-t0)/dur);
+    const e=1-Math.pow(1-p,3.2);
+    el.textContent=fmtMoney(from+(to-from)*e);
+    if(p<1){el._raf=requestAnimationFrame(step);}
+    else if(wrap){wrap.classList.remove('counting');}
+  };
+  el._raf=requestAnimationFrame(step);
+}
+
+// ══════════════════════════════════════════════════════════════════
 // VESTA — ÍNDICE GENERAL DEL JAVASCRIPT
 // ──────────────────────────────────────────────────────────────────
 // Todo el JS de la app vive en este único <script>, en este orden:
+//   0) Base                       → ICON (iconos SVG), EL (caché), MOTION
 //   1) Navegación de tabs         → switchTab, playDonutAnimation
 //   2) Helpers generales          → pad, uid, showBanner
 //   3) Almacenamiento (IndexedDB) → idbGet/idbSet y migración desde localStorage
@@ -1401,10 +2122,23 @@ function playDonutAnimation(){
 // ── 2) HELPERS GENERALES ─────────────────────────────────────────────
 function pad(n){return String(n).padStart(2,'0');}
 function uid(){return Date.now()+Math.random();}
-function showBanner(msg,dur=3000){
-  const b=document.getElementById('notifBanner');
-  b.textContent=msg;b.style.display='block';
-  clearTimeout(b._t);b._t=setTimeout(()=>b.style.display='none',dur);
+/* Avisos: un solo banner reutilizable. El tono define color + icono, así
+   ningún mensaje necesita emojis para leerse de un vistazo.
+   Tonos: info (por defecto) | ok | warn | danger | alarm | event */
+const BANNER_ICON={info:'info',ok:'check',warn:'alert',danger:'trash',alarm:'bell',event:'calendar'};
+function showBanner(msg,dur=3000,tone='info'){
+  const b=EL.notifBanner;
+  const name=BANNER_ICON[tone]||'info';
+  b.className='notif-banner tone-'+tone;
+  b.innerHTML='<span class="banner-ic">'+ICON[name](17)+'</span><span class="banner-msg"></span>';
+  b.querySelector('.banner-msg').textContent=msg;
+  // Reinicia la animación de entrada aunque el banner ya estuviera visible.
+  b.classList.remove('show','hide');void b.offsetWidth;b.classList.add('show');
+  clearTimeout(b._t);
+  b._t=setTimeout(()=>{
+    b.classList.add('hide');
+    clearTimeout(b._t2);b._t2=setTimeout(()=>b.classList.remove('show','hide'),260);
+  },dur);
 }
 
 // ══════════════════════════════════════════════════════════════════
@@ -1571,8 +2305,8 @@ function handleFileSelect(e){
   r.onload=ev=>{
     pendingAudioUrl=ev.target.result;pendingAudioName=f.name;
     const s=document.getElementById('soundName');s.textContent=f.name;s.classList.add('loaded');
-    const ic=document.querySelector('.sound-icon');if(ic)ic.textContent=isVideo?'🎬':'🎵';
-    if(/\.mkv$/i.test(f.name))showBanner('ℹ️ MKV puede no reproducirse en todos los dispositivos');
+    const ic=document.querySelector('.sound-icon');if(ic)ic.innerHTML=isVideo?ICON.video(22):ICON.music(22);
+    if(/\.mkv$/i.test(f.name))showBanner('MKV puede no reproducirse en todos los dispositivos',3000,'info');
   };
   r.readAsDataURL(f);
 }
@@ -1581,10 +2315,10 @@ function saveAlarm(){
   let hh=parseInt(document.getElementById('inp-hh').value);
   let mm=parseInt(document.getElementById('inp-mm').value);
   const label=document.getElementById('inp-label').value.trim()||'Alarma';
-  if(isNaN(hh)||hh<1||hh>12){showBanner('⚠️ Hora inválida (1-12)');return;}
-  if(isNaN(mm)||mm<0||mm>59){showBanner('⚠️ Minutos inválidos (0-59)');return;}
-  if(selectedDays.size===0){showBanner('⚠️ Elegí al menos un día');return;}
-  if(!pendingAudioUrl){showBanner('⚠️ Elegí un archivo de audio');return;}
+  if(isNaN(hh)||hh<1||hh>12){showBanner('Hora inválida (1-12)',3000,'warn');return;}
+  if(isNaN(mm)||mm<0||mm>59){showBanner('Minutos inválidos (0-59)',3000,'warn');return;}
+  if(selectedDays.size===0){showBanner('Elegí al menos un día',3000,'warn');return;}
+  if(!pendingAudioUrl){showBanner('Elegí un archivo de audio',3000,'warn');return;}
   let h24=hh;
   if(ampmSelected==='AM'&&hh===12)h24=0;
   if(ampmSelected==='PM'&&hh!==12)h24=hh+12;
@@ -1597,7 +2331,7 @@ function saveAlarm(){
     alarms.push(na);
     blessMedia(ensureAlarmMedia(na));
   }
-  closeModal();renderAlarms();startWatching();saveStorage();showBanner('✅ Alarma "'+label+'" guardada');
+  closeModal();renderAlarms();startWatching();saveStorage();showBanner('Alarma "'+label+'" guardada',3000,'ok');
 }
 
 function renderAlarms(){
@@ -1611,9 +2345,9 @@ function renderAlarms(){
     let h12=a.h24,ap='AM';
     if(h12===0)h12=12;else if(h12===12)ap='PM';else if(h12>12){h12-=12;ap='PM';}
     let badge='';
-    if(ringing)badge='<span class="status-badge ringing">♪ Sonando</span>';
-    else if(paused)badge='<span class="status-badge paused">⏸ Pausado</span>';
-    else if(a.active)badge='<span class="status-badge waiting">● Activa</span>';
+    if(ringing)badge='<span class="status-badge ringing"><i class="dot"></i>Sonando</span>';
+    else if(paused)badge='<span class="status-badge paused"><i class="dot"></i>Pausado</span>';
+    else if(a.active)badge='<span class="status-badge waiting"><i class="dot"></i>Activa</span>';
     const c=document.createElement('div');
     c.className='alarm-card'+(a.active?' active-card':'')+(ringing?' ringing-card':'');
     c.id='card-'+a.id;
@@ -1622,20 +2356,20 @@ function renderAlarms(){
       <div class="card-right">
         <div class="toggle-wrap">
           <button class="toggle ${a.active?'on':''}" onclick="toggleAlarm(${a.id})"></button>
-          <button class="btn-delete" onclick="deleteAlarm(${a.id})">🗑</button>
+          <button class="btn-delete" onclick="deleteAlarm(${a.id})" aria-label="Eliminar alarma">${ICON.trash(18)}</button>
         </div>${badge}
       </div></div>
-      <div class="card-meta"><span class="card-label">📅 ${daysLabel(a.days)} · 🎵 ${a.label}${a.audioName?' · '+a.audioName:''}</span></div>
+      <div class="card-meta"><span class="card-label">${daysLabel(a.days)} · ${a.label}${a.audioName?' · '+a.audioName:''}</span></div>
       <div class="ring-controls ${ringing||paused?'show':''}" id="rc-${a.id}">
-        <button class="ring-btn pause-btn" onclick="togglePause(${a.id})">${paused?'▶ Reanudar':'⏸ Pausar'}</button>
-        <button class="ring-btn stop-btn" onclick="stopAlarm(${a.id})">⏹ Detener</button>
+        <button class="ring-btn pause-btn" onclick="togglePause(${a.id})">${paused?ICON.play(15)+'Reanudar':ICON.pause(15)+'Pausar'}</button>
+        <button class="ring-btn stop-btn" onclick="stopAlarm(${a.id})">${ICON.stop(15)}Detener</button>
       </div>`;
     list.appendChild(c);
   });
 }
 
-function toggleAlarm(id){const a=alarms.find(x=>x.id===id);if(!a)return;a.active=!a.active;if(!a.active)stopAlarm(id);renderAlarms();saveStorage();if(a.active)requestWakeLock();else releaseWakeLockIfIdle();showBanner(a.active?'✅ Alarma activada':'🔕 Alarma desactivada');}
-function deleteAlarm(id){stopAlarm(id);const i=alarms.findIndex(x=>x.id===id);if(i>-1){try{localStorage.removeItem('bat_audio_'+id);}catch(e){}alarms.splice(i,1);}renderAlarms();saveStorage();showBanner('🗑 Alarma eliminada');}
+function toggleAlarm(id){const a=alarms.find(x=>x.id===id);if(!a)return;a.active=!a.active;if(!a.active)stopAlarm(id);renderAlarms();saveStorage();if(a.active)requestWakeLock();else releaseWakeLockIfIdle();showBanner(a.active?'Alarma activada':'Alarma desactivada',3000,a.active?'ok':'info');}
+function deleteAlarm(id){stopAlarm(id);const i=alarms.findIndex(x=>x.id===id);if(i>-1){try{localStorage.removeItem('bat_audio_'+id);}catch(e){}alarms.splice(i,1);}renderAlarms();saveStorage();showBanner('Alarma eliminada',3000,'danger');}
 // ── Reproducción de audio robusta ───────────────────────────────────────────
 // Detecta si un dataURL corresponde a un video (mp4/mov/webm/etc.). Los archivos
 // de video deben reproducirse en un <video> y no en un <audio>, porque muchos
@@ -1730,13 +2464,13 @@ function ringAlarm(id){
   const a=alarms.find(x=>x.id===id);if(!a)return;
   a.paused=false;a.ringingNow=true;a.usingFallback=false;
   notifyAlarm(a.label);                       // notificación (mejor opción en 2º plano)
-  showBanner('🔔 ¡Alarma! '+a.label,8000);
+  showBanner('¡Alarma! '+a.label,8000,'alarm');
   renderAlarms();
 
   const useFallback=(msg)=>{
     a.usingFallback=true;
     startFallbackTone();
-    showBanner('⚠️ Tu audio no se pudo reproducir, sonando tono por defecto',6000);
+    showBanner('Tu audio no se pudo reproducir, sonando tono por defecto',6000,'warn');
     renderAlarms();
   };
 
@@ -1815,7 +2549,7 @@ document.addEventListener('visibilitychange',()=>{
 });
 
 // ── 5) CRONÓMETRO ─────────────────────────────────────────────────────
-let swRunning=false,swStart=0,swElapsed=0,swRaf=null,swLaps=[];
+let swRunning=false,swStart=0,swElapsed=0,swRaf=null,swLaps=[],_swLastMain='';
 function swFmt(ms){
   const totalSec=Math.floor(ms/1000);
   return{main:pad(Math.floor(totalSec/60))+':'+pad(totalSec%60),ms:'.'+pad(Math.floor((ms%1000)/10))};
@@ -1823,41 +2557,44 @@ function swFmt(ms){
 function swTick(){
   const total=swElapsed+(performance.now()-swStart);
   const f=swFmt(total);
-  document.getElementById('swTime').textContent=f.main;
-  document.getElementById('swMs').textContent=f.ms;
+  if(f.main!==_swLastMain){EL.swTime.textContent=f.main;_swLastMain=f.main;}
+  EL.swMs.textContent=f.ms;
   if(swRunning)swRaf=requestAnimationFrame(swTick);
 }
 function swToggle(){
   if(!swRunning){
-    swRunning=true;swStart=performance.now();
-    document.getElementById('swStartBtn').textContent='⏸';
-    document.getElementById('swStartBtn').classList.add('running');
-    document.getElementById('swStopBtn').disabled=false;
-    document.getElementById('swRing').classList.add('running');
-    document.getElementById('swTime').classList.add('running');
+    swRunning=true;swStart=performance.now();_swLastMain='';
+    EL.swStartBtn.innerHTML=ICON.pause(30);
+    EL.swStartBtn.setAttribute('aria-label','Pausar');
+    EL.swStartBtn.classList.add('running');
+    EL.swStopBtn.disabled=false;
+    EL.swRing.classList.add('running');
+    EL.swTime.classList.add('running');
     cancelAnimationFrame(swRaf);
     swRaf=requestAnimationFrame(swTick);
   }else{
     swRunning=false;swElapsed+=performance.now()-swStart;
     cancelAnimationFrame(swRaf);
-    document.getElementById('swStartBtn').textContent='▶';
-    document.getElementById('swStartBtn').classList.remove('running');
-    document.getElementById('swRing').classList.remove('running');
-    document.getElementById('swTime').classList.remove('running');
+    EL.swStartBtn.innerHTML=ICON.play(30);
+    EL.swStartBtn.setAttribute('aria-label','Continuar');
+    EL.swStartBtn.classList.remove('running');
+    EL.swRing.classList.remove('running');
+    EL.swTime.classList.remove('running');
     const f=swFmt(swElapsed);
     swLaps.unshift({num:swLaps.length+1,time:f.main+f.ms});
     renderLaps();
   }
 }
 function swStop(){
-  swRunning=false;swElapsed=0;cancelAnimationFrame(swRaf);
-  document.getElementById('swTime').textContent='00:00';
-  document.getElementById('swMs').textContent='.00';
-  document.getElementById('swStartBtn').textContent='▶';
-  document.getElementById('swStartBtn').classList.remove('running');
-  document.getElementById('swStopBtn').disabled=true;
-  document.getElementById('swRing').classList.remove('running');
-  document.getElementById('swTime').classList.remove('running');
+  swRunning=false;swElapsed=0;_swLastMain='';cancelAnimationFrame(swRaf);
+  EL.swTime.textContent='00:00';
+  EL.swMs.textContent='.00';
+  EL.swStartBtn.innerHTML=ICON.play(30);
+  EL.swStartBtn.setAttribute('aria-label','Iniciar');
+  EL.swStartBtn.classList.remove('running');
+  EL.swStopBtn.disabled=true;
+  EL.swRing.classList.remove('running');
+  EL.swTime.classList.remove('running');
   swLaps=[];renderLaps();
 }
 function renderLaps(){
@@ -1927,7 +2664,7 @@ function updateDonut(){
     hoursEl.classList.add('phosphor-flash');
   }
   hoursEl.dataset.prevValue = newHoursText;
-  hoursEl.textContent = newHoursText;
+  animateMoney(hoursEl, available);
   hoursEl.style.color = (available !== null && available < 0) ? '#e05c5c' : '#e8dfc8';
   labelEl.textContent = available !== null ? (available >= 0 ? 'disponible' : 'excedido') : 'disponible';
 
@@ -1947,10 +2684,20 @@ function updateDonut(){
     c.setAttribute('fill', 'none');
     c.setAttribute('stroke', color);
     c.setAttribute('stroke-width', '28');
-    c.setAttribute('stroke-dasharray', dash.toFixed(2) + ' ' + gap.toFixed(2));
+    const finalDash = dash.toFixed(2) + ' ' + gap.toFixed(2);
     c.setAttribute('stroke-dashoffset', (-offset).toFixed(2));
     c.setAttribute('stroke-linecap', 'butt');
-    seg.appendChild(c);
+    // El trazo arranca en cero y crece hasta su tamaño real: el anillo se
+    // dibuja en vez de aparecer. Dos rAF para que el navegador registre el
+    // estado inicial antes de cambiarlo (si no, no hay transición).
+    if (MOTION.ok) {
+      c.setAttribute('stroke-dasharray', '0 ' + CIRC.toFixed(2));
+      seg.appendChild(c);
+      requestAnimationFrame(() => requestAnimationFrame(() => c.setAttribute('stroke-dasharray', finalDash)));
+    } else {
+      c.setAttribute('stroke-dasharray', finalDash);
+      seg.appendChild(c);
+    }
     offset += frac * CIRC;  // el siguiente arranca donde terminó este (horario)
   };
 
@@ -2012,8 +2759,8 @@ function openBudgetModal(){
 function closeBudgetModal(){document.getElementById('budgetModalOverlay').classList.remove('open');}
 function saveBudgetModal(){
   const v=parseFloat(document.getElementById('budgetInput').value);
-  if(isNaN(v)||v<0){showBanner('⚠️ Valor inválido');return;}
-  salary=v;closeBudgetModal();renderBudgetFields();saveStorage();showBanner('✅ Sueldo guardado');
+  if(isNaN(v)||v<0){showBanner('Valor inválido',3000,'warn');return;}
+  salary=v;closeBudgetModal();renderBudgetFields();saveStorage();showBanner('Sueldo guardado',3000,'ok');
 }
 function openExpenseModal(){
   selectedColor=EXPENSE_COLORS[0].hex;
@@ -2039,15 +2786,15 @@ function selectExpenseColor(hex,el){
 function saveExpense(){
   const name=document.getElementById('expenseName').value.trim();
   const amount=parseFloat(document.getElementById('expenseAmount').value);
-  if(!name){showBanner('⚠️ Ingresá un nombre');return;}
-  if(isNaN(amount)||amount<=0){showBanner('⚠️ Monto inválido');return;}
+  if(!name){showBanner('Ingresá un nombre',3000,'warn');return;}
+  if(isNaN(amount)||amount<=0){showBanner('Monto inválido',3000,'warn');return;}
   expenses.push({id:uid(),name,amount,color:selectedColor});
-  closeExpenseModal();renderBudgetFields();saveStorage();showBanner('✅ Gasto agregado');
+  closeExpenseModal();renderBudgetFields();saveStorage();showBanner('Gasto agregado',3000,'ok');
 }
 function deleteExpense(id){
   const i=expenses.findIndex(e=>String(e.id)===String(id));
   if(i>-1)expenses.splice(i,1);
-  renderBudgetFields();saveStorage();showBanner('🗑 Gasto eliminado');
+  renderBudgetFields();saveStorage();showBanner('Gasto eliminado',3000,'danger');
 }
 
 
@@ -2111,7 +2858,7 @@ function renderCalEvents(){
   }).sort();
   if(monthKeys.length===0){
     title.textContent='Eventos del mes';
-    list.innerHTML='<div class="cal-no-events"><div class="cal-no-icon">🗓</div>Sin eventos este mes</div>';
+    list.innerHTML='<div class="cal-no-events"><div class="cal-no-icon">'+ICON.calendar(34)+'</div>Sin eventos este mes</div>';
     return;
   }
   title.textContent=`Eventos del mes (${monthKeys.reduce((a,k)=>a+calEvents[k].length,0)})`;
@@ -2120,7 +2867,7 @@ function renderCalEvents(){
     calEvents[k].forEach(ev=>{
       const card = document.createElement('div');
       card.className = 'cal-event-card';
-      card.innerHTML = `<div style="flex:1"><div class="cal-event-text">${ev.text}</div><div class="cal-event-date">${calDisplayDate(k)}</div></div><button class="cal-event-del" aria-label="Eliminar evento">🗑</button>`;
+      card.innerHTML = `<div style="flex:1"><div class="cal-event-text">${ev.text}</div><div class="cal-event-date">${calDisplayDate(k)}</div></div><button class="cal-event-del" aria-label="Eliminar evento">${ICON.trash(18)}</button>`;
       card.querySelector('button').addEventListener('click', ()=>deleteCalEvent(k, ev.id));
       cards.push(card);
     });
@@ -2151,13 +2898,13 @@ function handleEventOverlay(e){if(e.target===document.getElementById('eventModal
 
 function saveEvent(){
   const text=document.getElementById('eventTextarea').value.trim();
-  if(!text){showBanner('⚠️ Escribí un evento');return;}
+  if(!text){showBanner('Escribí un evento',3000,'warn');return;}
   if(!calEvents[calPendingKey])calEvents[calPendingKey]=[];
   calEvents[calPendingKey].push({id:uid(),text});
   closeEventModal();
   renderCalendar();
   saveStorage();
-  showBanner('📅 Evento guardado');
+  showBanner('Evento guardado',3000,'event');
   if(typeof scheduleCalNotifications === 'function') scheduleCalNotifications();
 }
 
@@ -2167,16 +2914,26 @@ function deleteCalEvent(key,id){
   if(calEvents[key].length===0)delete calEvents[key];
   renderCalendar();
   saveStorage();
-  showBanner('🗑 Evento eliminado');
+  showBanner('Evento eliminado',3000,'danger');
 }
 
 
 // ── 8) PERSISTENCIA Y ARRANQUE DE LA APP ─────────────────────────────
+// Qué audio quedó realmente escrito en disco, por alarma (ver saveStorage).
+const _audioWritten=new Map();
 function saveStorage(){
   try{
     const meta=alarms.map(a=>({id:a.id,h24:a.h24,mm:a.mm,label:a.label,days:a.days,audioName:a.audioName,active:a.active}));
     localStorage.setItem('bat_alarms',JSON.stringify(meta));
-    alarms.forEach(a=>{if(a.audioDataUrl){try{localStorage.setItem('bat_audio_'+a.id,a.audioDataUrl);}catch(e){}}});
+    // El audio de una alarma es un Base64 que puede pesar megabytes y
+    // localStorage escribe de forma síncrona (congela la interfaz). Antes se
+    // reescribían TODOS en cada guardado, aunque solo hubieras apagado un
+    // interruptor. Ahora solo se escribe el que realmente cambió.
+    alarms.forEach(a=>{
+      if(!a.audioDataUrl)return;
+      if(_audioWritten.get(a.id)===a.audioDataUrl)return;
+      try{localStorage.setItem('bat_audio_'+a.id,a.audioDataUrl);_audioWritten.set(a.id,a.audioDataUrl);}catch(e){}
+    });
     localStorage.setItem('bat_salary',salary!==null?String(salary):'');
     localStorage.setItem('bat_expenses',JSON.stringify(expenses));
     localStorage.setItem('bat_cal',JSON.stringify(calEvents));
@@ -2187,6 +2944,7 @@ function loadStorage(){
     const ra=localStorage.getItem('bat_alarms')||localStorage.getItem('aizo_alarms');
     if(ra){JSON.parse(ra).forEach(x=>{
       const audioUrl=localStorage.getItem('bat_audio_'+x.id)||x.audioDataUrl||null;
+      if(audioUrl)_audioWritten.set(x.id,audioUrl);   // ya está en disco: no reescribirlo
       alarms.push(Object.assign({audio:null,paused:false},x,{audioDataUrl:audioUrl}));
     });}
     const sl=localStorage.getItem('bat_salary');
@@ -2262,10 +3020,10 @@ renderAlarms();startWatching();renderBudgetFields();renderCalendar();
 
 // Categorías de la librería (chips de filtro + hoja para agregar prenda).
 const AW_CATS=[
-  {key:'top',label:'Superiores',short:'Superior',icon:'👔'},
-  {key:'bottom',label:'Inferiores',short:'Inferior',icon:'👖'},
-  {key:'shoes',label:'Calzado',short:'Calzado',icon:'👞'},
-  {key:'acc',label:'Accesorios',short:'Accesorio',icon:'⌚'}
+  {key:'top',label:'Superiores',short:'Superior'},
+  {key:'bottom',label:'Inferiores',short:'Inferior'},
+  {key:'shoes',label:'Calzado',short:'Calzado'},
+  {key:'acc',label:'Accesorios',short:'Accesorio'}
 ];
 const AW_CATMAP=Object.fromEntries(AW_CATS.map(c=>[c.key,c]));
 const awU=id=>`https://images.unsplash.com/photo-${id}?w=500&q=70&auto=format&fit=crop`;
@@ -2309,7 +3067,7 @@ function awImg(it){
   if(!it.src){
     return `<div class="aw-img-empty" data-id="${it.id}" aria-label="${it.name} (sin imagen asignada)"></div>`;
   }
-  return `<img src="${it.src}" data-id="${it.id}" onerror="awImgFallback(this)" alt="${it.name}">`;
+  return `<img src="${it.src}" data-id="${it.id}" onerror="awImgFallback(this)" alt="${it.name}" loading="lazy" decoding="async">`;
 }
 function awImgFallback(img){
   const empty=document.createElement('div');
@@ -2455,13 +3213,13 @@ function awGenerate(){
     opts.push(o);
   }
   if(!opts.length){
-    showBanner('Te faltan prendas de Base o Inferior en tu clóset 👕');
+    showBanner('Te faltan prendas de Base o Inferior en tu clóset',3000,'warn');
     awSwitchSub('lib');
     return;
   }
   awOutfitOptions=opts;awOutfit=opts[0];awRenderLook();
   if(opts.every(o=>!o.colorMatched)){
-    showBanner('No hay una combinación perfectamente armoniosa con tu clóset actual; te armé las mejores opciones disponibles 🎨');
+    showBanner('No hay una combinación perfectamente armoniosa con tu clóset actual; te armé las mejores opciones disponibles',4000,'info');
   }
 }
 
@@ -2506,7 +3264,7 @@ function awDeleteItem(id,ev){
   if(ev)ev.stopPropagation();
   awItems=awItems.filter(it=>it.id!==id);
   if(awOutfit){for(const k in awOutfit){if(awOutfit[k]&&awOutfit[k].id===id){awOutfit=null;break;}}}
-  awRenderGrid();awPersist();showBanner('🗑 Prenda eliminada');
+  awRenderGrid();awPersist();showBanner('Prenda eliminada',3000,'danger');
 }
 
 
@@ -2528,7 +3286,7 @@ function awPickFile(cat,category){
         // hasta que el usuario lo reclasifique manualmente editando la prenda.
         awItems.unshift({id:'u'+Date.now(),cat,category:cat2,name:co.short+' propio',src:e.target.result,color:'gris',tone:'#9c7a54'});
         awFilter='all';awRenderFilters();awRenderGrid();awPersist();
-        showBanner('✓ Prenda agregada a '+co.label);
+        showBanner('Prenda agregada a '+co.label,3000,'ok');
       };
       r.readAsDataURL(file);
     }
@@ -2542,7 +3300,7 @@ function awPickFile(cat,category){
 // Dibuja el carrusel completo con todas las opciones de la tanda actual.
 function awRenderLook(){
   const wrap=document.getElementById('awLookCard');if(!wrap)return;
-  if(!awOutfitOptions.length){wrap.innerHTML=`<div class="aw-empty">Generá tus primeros outfits ✨</div>`;return;}
+  if(!awOutfitOptions.length){wrap.innerHTML=`<div class="aw-empty">Todavía no generaste ningún outfit.<br><b>Generar más opciones</b> arma combinaciones con tu clóset.</div>`;return;}
   wrap.innerHTML=`<div class="aw-look-carousel">${awOutfitOptions.map((o,idx)=>awRenderLookCard(o,idx)).join('')}</div>`;
 }
 // Dibuja UNA tarjeta de outfit dentro del carrusel: solo la combinación de
@@ -2559,7 +3317,7 @@ function awRenderLookCard(o,idx){
     <div class="aw-look-card">
       <div class="aw-look-grid">${slots}</div>
       <div class="aw-palette">${dots}</div>
-      <button class="aw-btn solid aw-look-save" onclick="awSaveOutfit(${idx})">♥ Guardar esta opción</button>
+      <button class="aw-btn solid aw-look-save" onclick="awSaveOutfit(${idx})">${ICON.heart(16)}Guardar esta opción</button>
     </div>`;
 }
 
@@ -2568,10 +3326,10 @@ function awRenderLookCard(o,idx){
 // Recibe el índice de la opción del carrusel (awOutfitOptions[idx]) a guardar.
 function awSaveOutfit(idx){
   const o=awOutfitOptions[idx];
-  if(!o){showBanner('Generá un outfit primero ✨');return;}
+  if(!o){showBanner('Generá un outfit primero',3000,'info');return;}
   if(!o.base&&!o.outer&&!o.bottom&&!o.shoes&&!o.acc){showBanner('Outfit vacío');return;}
   awSaved.unshift({id:'o'+Date.now(),items:{base:o.base,outer:o.outer,bottom:o.bottom,shoes:o.shoes,acc:o.acc}});
-  awRenderSaved();awPersist();showBanner('♥ Outfit guardado');
+  awRenderSaved();awPersist();showBanner('Outfit guardado',3000,'ok');
 }
 function awRenderSaved(){
   const wrap=document.getElementById('awSaved');if(!wrap)return;
@@ -2582,7 +3340,7 @@ function awRenderSaved(){
     return `<div class="aw-saved-card">
       <div class="aw-saved-thumbs">${thumbs}</div>
       <div class="aw-saved-info"><div class="sub">${picks.length} piezas</div></div>
-      <button class="aw-saved-del" onclick="awDeleteSaved('${o.id}')" aria-label="Eliminar">🗑</button>
+      <button class="aw-saved-del" onclick="awDeleteSaved('${o.id}')" aria-label="Eliminar">${ICON.trash(16)}</button>
     </div>`;
   }).join('');
 }
@@ -2688,7 +3446,7 @@ function gymRoutineRowHTML(ex){
       <select class="gym-ex-day-select" onchange="gymSetExDay('${ex.id}',this.value)" aria-label="Día asignado">
         ${dayOptions}
       </select>
-      <button class="gym-ex-del" onclick="gymDeleteExercise('${ex.id}')" aria-label="Eliminar ejercicio">🗑</button>
+      <button class="gym-ex-del" onclick="gymDeleteExercise('${ex.id}')" aria-label="Eliminar ejercicio">${ICON.trash(18)}</button>
     </div>
     <div class="gym-ex-fields">
       <div class="gym-stepper">
@@ -2769,7 +3527,7 @@ function gymSetExDay(id,val){
   const ex=gymRoutine.find(e=>e.id===id);if(!ex)return;
   ex.day=parseInt(val,10);
   renderGymRoutine();gymPersist();
-  showBanner('📅 Movido a '+gymDayFullName(ex.day));
+  showBanner('Movido a '+gymDayFullName(ex.day),3000,'event');
 }
 function gymSetEx(id,field,val){
   const ex=gymRoutine.find(e=>e.id===id);if(!ex)return;
@@ -2790,7 +3548,7 @@ function gymStepEx(id,field,delta){
 function gymDeleteExercise(id){
   const i=gymRoutine.findIndex(e=>e.id===id);
   if(i>-1)gymRoutine.splice(i,1);
-  renderGymRoutine();gymPersist();showBanner('🗑 Ejercicio eliminado');
+  renderGymRoutine();gymPersist();showBanner('Ejercicio eliminado',3000,'danger');
 }
 
 
@@ -2801,7 +3559,7 @@ function gymLoadRowHTML(l){
     <div class="gym-load-top">
       <input class="gym-load-name" type="text" placeholder="Ejercicio (ej. Prensa, Jalones)"
             value="${gymEsc(l.name)}" maxlength="60" oninput="gymSetLoad('${l.id}','name',this.value)">
-      <button class="gym-load-del" onclick="gymDeleteLoad('${l.id}')" aria-label="Eliminar registro">🗑</button>
+      <button class="gym-load-del" onclick="gymDeleteLoad('${l.id}')" aria-label="Eliminar registro">${ICON.trash(18)}</button>
     </div>
     <div class="gym-load-fields">
       <span class="gym-load-stat-kicker">PR Actual</span>
@@ -2816,7 +3574,7 @@ function gymLoadRowHTML(l){
     </div>
     <div class="gym-load-foot">
       <input class="gym-load-date" type="date" value="${l.date||''}" onchange="gymSetLoad('${l.id}','date',this.value)">
-      <button class="gym-load-update" onclick="gymStampToday('${l.id}')" aria-label="Actualizar a hoy" title="Actualizar a hoy">↻</button>
+      <button class="gym-load-update" onclick="gymStampToday('${l.id}')" aria-label="Actualizar a hoy" title="Actualizar a hoy">${ICON.refresh(18)}</button>
     </div>
   </div>`;
 }
@@ -2883,12 +3641,12 @@ function gymStampToday(id){
   l.date=gymTodayISO();
   const row=document.querySelector('.gym-load-row[data-id="'+id+'"]');
   if(row){const di=row.querySelector('.gym-load-date');if(di)di.value=l.date;}
-  gymPersist();showBanner('✅ Carga actualizada a hoy');
+  gymPersist();showBanner('Carga actualizada a hoy',3000,'ok');
 }
 function gymDeleteLoad(id){
   const i=gymLoads.findIndex(x=>x.id===id);
   if(i>-1)gymLoads.splice(i,1);
-  renderGymLoads();gymPersist();showBanner('🗑 Registro eliminado');
+  renderGymLoads();gymPersist();showBanner('Registro eliminado',3000,'danger');
 }
 
 
@@ -2947,7 +3705,7 @@ function gymLoadStore(){
       const parts=[];
       if(removedEx>0)parts.push(removedEx+' ejercicio(s)');
       if(removedLoads>0)parts.push(removedLoads+' registro(s) de carga');
-      showBanner('🧹 Se limpiaron '+parts.join(' y ')+' duplicados o vacíos');
+      showBanner('Se limpiaron '+parts.join(' y ')+' duplicados o vacíos',3000,'ok');
     }
   }).catch(e=>console.warn('gymLoadStore:',e));
 }
@@ -2975,7 +3733,7 @@ async function initNotifications(){
 function notifyAlarm(label){
   if(!('Notification' in window)||Notification.permission!=='granted') return;
   try{
-    showAppNotification('⏰ Vesta — Alarma',{body:label,icon:'./icon-192.png',vibrate:[200,100,200],tag:'alarm-'+Date.now(),requireInteraction:true});
+    showAppNotification('Vesta — Alarma',{body:label,icon:'./icon-192.png',vibrate:[200,100,200],tag:'alarm-'+Date.now(),requireInteraction:true});
   }catch(e){}
 }
 function scheduleCalNotifications(){
@@ -2990,7 +3748,7 @@ function scheduleCalNotifications(){
     // offset 0 = "hoy": aviso el mismo día. Cada uno tiene su propia clave (antes
     // compartían una sola y el segundo aviso nunca llegaba a dispararse).
     const isEve=offset===1;
-    const title=isEve?'🔔 Vesta — Recordatorio':'📅 Vesta — Hoy';
+    const title=isEve?'Vesta — Recordatorio':'Vesta — Hoy';
     const prefix=isEve?'Mañana: ':'';
     evs.forEach(ev=>{
       const nk='notified_'+ev.id+'_'+offset;
@@ -3029,7 +3787,7 @@ setInterval(()=>{if(typeof Notification!=='undefined'&&Notification.permission==
       <div style="font-size:11px;font-weight:800;letter-spacing:2px;color:#c8983a;text-transform:uppercase;margin-bottom:6px;">Instalar Vesta en iPhone</div>
       <div style="font-size:13px;color:rgba(220,190,130,0.85);line-height:1.55;">
         Tocá <strong style="color:#e8b84a;">Compartir</strong> 
-        <span style="display:inline-block;background:rgba(200,150,60,0.2);border:1px solid rgba(200,150,60,0.4);border-radius:5px;padding:1px 5px;font-size:12px;">⎋</span>
+        <span style="display:inline-flex;vertical-align:-3px;background:rgba(200,150,60,0.2);border:1px solid rgba(200,150,60,0.4);border-radius:5px;padding:2px 5px;"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#e8b84a" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 15V3"/><path d="m8 7 4-4 4 4"/><path d="M5 12v7a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-7"/></svg></span>
         y luego <strong style="color:#e8b84a;">"Añadir a pantalla de inicio"</strong> para usar Vesta como app nativa.
       </div>
     </div>
@@ -3054,7 +3812,18 @@ setInterval(()=>{if(typeof Notification!=='undefined'&&Notification.permission==
 </script>
 <script>
 // ── Registro del Service Worker (PWA offline + notificaciones fiables) ──
-if ('serviceWorker' in navigator) {
+//
+// El Service Worker es lo que hace que Vesta abra sin conexión y que las
+// notificaciones sean fiables en Android. Necesita dos cosas: estar
+// servido por http(s) y que sw.js esté al lado del HTML.
+//
+// Eso pasa en GitHub Pages. NO pasa si abrís el archivo suelto (file://)
+// ni en una vista previa que sirve el HTML desde otro dominio: ahí el
+// navegador busca sw.js, recibe un 404 y escupe un warning que parece un
+// error de Vesta. No lo es — la app funciona igual, solo que sin caché
+// offline. Por eso acá el fallo se explica en vez de alarmar.
+const SW_OK = 'serviceWorker' in navigator && location.protocol.startsWith('http');
+if (SW_OK) {
   window.addEventListener('load', () => {
     navigator.serviceWorker.register('./sw.js')
       .then((reg) => {
@@ -3063,7 +3832,16 @@ if ('serviceWorker' in navigator) {
         // está activado del lado del SW para minimizar el retraso).
         reg.update().catch(() => {});
       })
-      .catch((err) => console.warn('[SW] registro falló:', err));
+      .catch((err) => {
+        const noFile = /404|bad HTTP response|unsupported MIME/i.test(String(err && err.message));
+        if (noFile) {
+          console.info('[Vesta] Sin Service Worker: no se encontró sw.js junto al HTML. ' +
+                       'Es lo esperado en una vista previa; en GitHub Pages sí se registra. ' +
+                       'La app funciona igual, sin caché offline.');
+        } else {
+          console.info('[Vesta] Sin Service Worker:', err && err.message);
+        }
+      });
   });
 
   // El SW nos avisa cuando el usuario toca una notificación.
@@ -3076,7 +3854,7 @@ if ('serviceWorker' in navigator) {
         if (typeof switchTab === 'function') switchTab('calendario');
       }
       if (typeof msg.tag === 'string' && msg.tag.startsWith('alarm-')) {
-        if (typeof switchTab === 'function') switchTab('alarmas');
+        if (typeof switchTab === 'function') switchTab('alarms');
       }
     }
   });
@@ -3084,6 +3862,11 @@ if ('serviceWorker' in navigator) {
 
 // Muestra una notificación vía Service Worker si está disponible (más
 // confiable en Android/Chrome), si no, cae al Notification() normal.
+if (!SW_OK && location.protocol === 'file:') {
+  console.info('[Vesta] Abierta como archivo local: sin Service Worker ni instalación. ' +
+               'Para probar la PWA completa, servila por http (por ejemplo: python -m http.server).');
+}
+
 async function showAppNotification(title, options) {
   try {
     if ('serviceWorker' in navigator) {
@@ -3098,6 +3881,364 @@ async function showAppNotification(title, options) {
     return n;
   } catch (e) { /* sin soporte de notificaciones */ }
 }
+</script>
+
+<script>
+// ══════════════════════════════════════════════════════════════════
+// MOTOR DE MOVIMIENTO — se engancha a las funciones ya definidas
+// arriba sin reescribirlas: guarda la original y la envuelve. Así la
+// lógica de cada módulo queda intacta y el movimiento vive en un solo
+// lugar, fácil de apagar o de ajustar.
+// ══════════════════════════════════════════════════════════════════
+(function(){
+  'use strict';
+
+  // ── 1) Iconos declarados en el HTML ──────────────────────────────
+  hydrateIcons();
+
+
+  // ── 15) EL FONDO SE MUEVE CON VOS ────────────────────────────────
+  // Parallax: cada pieza del mecanismo se desplaza a distinta velocidad
+  // mientras scrolleás (data-depth en el HTML). El de atrás se mueve
+  // menos, el de adelante más y uno va al revés: eso es lo que produce
+  // profundidad. Se escribe en una variable CSS (--py) y no en la
+  // propiedad transform del engranaje, porque ahí manda la rotación.
+  const slots=[].slice.call(document.querySelectorAll('#mech .gear-slot'));
+  function parallax(y){
+    if(!MOTION.ok)return;
+    for(let i=0;i<slots.length;i++){
+      const d=parseFloat(slots[i].dataset.depth)||0;
+      slots[i].style.setProperty('--py',(y*d).toFixed(1)+'px');
+    }
+  }
+
+  // La máquina se reacomoda al cambiar de sección: un empujón en el
+  // sentido del viaje que vuelve solo.
+  let shiftTimer=0;
+  function mechNudge(dir){
+    if(!MOTION.ok)return;
+    const m=EL.mech;
+    if(!m)return;
+    m.style.setProperty('--mech-shift',(dir*7)+'px');
+    clearTimeout(shiftTimer);
+    shiftTimer=setTimeout(()=>m.style.setProperty('--mech-shift','0px'),620);
+  }
+
+  // ── 16) LA FIRMA DE CADA PESTAÑA ─────────────────────────────────
+  // Cada sección saluda a su manera al abrirse: la campana se sacude, el
+  // cronómetro da una vuelta, la pesa hace una repetición. Se dispara
+  // reiniciando la clase .sig; el keyframe correspondiente vive en el CSS
+  // (buscá "La firma de cada pestaña"). Para agregar una pestaña nueva,
+  // alcanza con escribir su @keyframes: acá no hay que tocar nada.
+  function playSignature(tab){
+    if(!MOTION.ok)return;
+    const btn=document.getElementById('tab-'+tab);
+    if(!btn)return;
+    btn.classList.remove('sig');
+    void btn.offsetWidth;                    // reinicia la animación
+    btn.classList.add('sig');
+  }
+
+  // ── 2) Indicador deslizante de la barra de pestañas ──────────────
+  // Referencia: la barra de iOS / la navegación de Linear. Un solo halo
+  // que viaja hasta la pestaña elegida en vez de seis que prenden y
+  // apagan. Se posiciona con variables CSS para que la transición la
+  // maneje el compositor (transform), no JavaScript cuadro por cuadro.
+  const TAB_ORDER=['alarms','stopwatch','registro','calendario','armario','gym'];
+  const bar=document.querySelector('.tab-bar');
+
+  function placeInk(){
+    const ink=EL.tabInk;
+    if(!bar||!ink)return;
+    const btn=bar.querySelector('.tab-btn.active');
+    if(!btn||!btn.offsetWidth)return;
+    const w=Math.max(42,btn.offsetWidth-6);
+    ink.style.setProperty('--ink-w',w+'px');
+    ink.style.setProperty('--ink-x',(btn.offsetLeft+(btn.offsetWidth-w)/2).toFixed(1)+'px');
+    ink.classList.add('ready');
+  }
+
+  // ── 3) Transición direccional entre secciones ────────────────────
+  // Referencia: "shared axis" de Material. La página entra desde el lado
+  // al que fuiste: da sensación de recorrido, no de corte.
+  let current=(function(){
+    try{return localStorage.getItem('bat_tab')||'alarms';}catch(e){return 'alarms';}
+  })();
+
+  const rawSwitchTab=window.switchTab;
+  window.switchTab=function(tab){
+    const from=TAB_ORDER.indexOf(current),to=TAB_ORDER.indexOf(tab);
+    const page=document.getElementById('page-'+tab);
+    if(page&&from>-1&&to>-1&&from!==to)page.style.setProperty('--dir',to>from?'1':'-1');
+    if(from>-1&&to>-1&&from!==to)mechNudge(to>from?1:-1);
+    current=tab;
+    rawSwitchTab.call(this,tab);
+    placeInk();
+    playSignature(tab);
+  };
+
+  // ── 4) Onda al tocar ─────────────────────────────────────────────
+  // Referencia: Material. Nace en el punto exacto del toque, lo que hace
+  // que el botón se sienta físico. Va en los botones de acción grandes:
+  // en los iconos chiquitos ensucia más de lo que aporta.
+  const RIPPLE='.sw-btn,.btn-save,.mini-ok,.event-btn-save,.gym-add-btn,.aw-btn,'+
+               '.aw-sheet-opt,.day-preset-btn,.btn-add,.aw-fab,.gym-load-update';
+  document.addEventListener('pointerdown',(e)=>{
+    if(!MOTION.ok)return;
+    const t=e.target.closest(RIPPLE);
+    if(!t||t.disabled)return;
+    const r=t.getBoundingClientRect();
+    const size=Math.max(r.width,r.height)*2.1;
+    const s=document.createElement('span');
+    s.className='ripple';
+    s.style.width=s.style.height=size.toFixed(0)+'px';
+    s.style.left=(e.clientX-r.left-size/2).toFixed(0)+'px';
+    s.style.top=(e.clientY-r.top-size/2).toFixed(0)+'px';
+    t.classList.add('rippling');
+    t.appendChild(s);
+    s.addEventListener('animationend',()=>s.remove(),{once:true});
+  },{passive:true});
+
+  // ── 5) Encabezados que ceden al hacer scroll ─────────────────────
+  // Referencia: los títulos grandes de iOS. Listener pasivo + un solo
+  // rAF por ráfaga de scroll: cero trabajo extra mientras el dedo baja.
+  document.querySelectorAll('.page,.aw-scroll').forEach(sc=>{
+    let ticking=false;
+    sc.addEventListener('scroll',()=>{
+      if(ticking)return;
+      ticking=true;
+      requestAnimationFrame(()=>{
+        sc.classList.toggle('is-scrolled',sc.scrollTop>16);
+        parallax(sc.scrollTop);
+        ticking=false;
+      });
+    },{passive:true});
+  });
+
+  // ── 6) El botón flotante se transforma en "×" ────────────────────
+  // Referencia: el FAB de Material. Mismo icono, rotado 45°: la cruz
+  // cuenta que el botón que abrió la hoja es el que la cierra.
+  if(typeof window.awOpenSheet==='function'){
+    const rawOpen=window.awOpenSheet;
+    window.awOpenSheet=function(){rawOpen.apply(this,arguments);const f=EL.awFab;if(f)f.classList.add('sheet-open');};
+  }
+  if(typeof window.awCloseSheet==='function'){
+    const rawClose=window.awCloseSheet;
+    window.awCloseSheet=function(){rawClose.apply(this,arguments);const f=EL.awFab;if(f)f.classList.remove('sheet-open');};
+  }
+
+  // ── 7) Pausa en segundo plano ────────────────────────────────────
+  // Si Vesta no está a la vista, no tiene sentido seguir pintando
+  // latidos y brillos: se congelan y se reanudan al volver.
+  document.addEventListener('visibilitychange',()=>{
+    document.body.classList.toggle('anim-paused',document.hidden);
+  });
+
+
+  // Envuelve una función global para correr algo DESPUÉS de ella, sin
+  // tocar su código. Si la función no existe, no pasa nada: cada módulo
+  // puede faltar sin romper el resto.
+  function wrapAfter(name,after){
+    const raw=window[name];
+    if(typeof raw!=='function')return;
+    window[name]=function(){
+      const r=raw.apply(this,arguments);
+      try{after.apply(this,arguments);}catch(e){console.warn('['+name+']',e);}
+      return r;
+    };
+  }
+
+  // ── 9) EL MECANISMO ──────────────────────────────────────────────
+  // Los engranajes giran con la Web Animations API en vez de CSS por un
+  // motivo concreto: updatePlaybackRate cambia la velocidad SIN saltar
+  // de posición. Con animation-duration de CSS, pasar de 240s a 40s hace
+  // que el engranaje salte al ángulo que le tocaría — se ve como un
+  // tirón. Con WAAPI acelera desde donde está, como una máquina real.
+  // Si el navegador no soporta WAAPI, queda la animación CSS de respaldo.
+  const Mech=(()=>{
+    const els=[].slice.call(document.querySelectorAll('#mech [data-anim]'));
+    const anims=[];
+    let rate=1,target=1,raf=0,restTimer=0,base=1;
+
+    function start(){
+      if(!MOTION.ok||!els.length||typeof els[0].animate!=='function')return;
+      els.forEach(el=>{
+        const dur=(parseFloat(el.dataset.dur)||240)*1000;
+        el.style.animation='none';               // CSS deja de mandar
+        let frames,opts;
+        if(el.dataset.anim==='swing'){
+          // Péndulo: va y vuelve, con la desaceleración de los extremos.
+          frames=[{transform:'rotate(-6.5deg)'},{transform:'rotate(6.5deg)'}];
+          opts={duration:dur,iterations:Infinity,direction:'alternate',
+                easing:'cubic-bezier(.45,0,.55,1)'};
+        }else{
+          const dir=el.dataset.dir==='-1'?-360:360;
+          frames=[{transform:'rotate(0deg)'},{transform:'rotate('+dir+'deg)'}];
+          opts={duration:dur,iterations:Infinity,easing:'linear'};
+        }
+        anims.push(el.animate(frames,opts));
+      });
+    }
+
+    // Rampa suave de velocidad: subir de golpe de 1x a 9x se siente
+    // brusco, así que la velocidad viaja con la misma curva que todo lo
+    // demás. Solo corre mientras dura la rampa (~400ms), no siempre.
+    function ramp(){
+      cancelAnimationFrame(raf);
+      if(!anims.length){rate=target;return;}
+      const from=rate,t0=performance.now();
+      const step=(now)=>{
+        const p=Math.min(1,(now-t0)/400);
+        rate=from+(target-from)*(1-Math.pow(1-p,3));
+        for(let i=0;i<anims.length;i++)anims[i].playbackRate=rate;
+        if(p<1)raf=requestAnimationFrame(step);
+      };
+      raf=requestAnimationFrame(step);
+    }
+    function setRate(r){target=r;ramp();}
+
+    return {
+      start,
+      /* Velocidad de reposo: la marca el estado sostenido de la app. */
+      rest(r){base=r;clearTimeout(restTimer);setRate(r);},
+      /* Golpe de trabajo: la máquina engrana, hace la tarea y vuelve. */
+      burst(mult,ms){
+        document.body.classList.add('mech-working');
+        setRate(mult||8);
+        clearTimeout(restTimer);
+        restTimer=setTimeout(()=>{
+          document.body.classList.remove('mech-working');
+          setRate(base);
+        },ms||850);
+      },
+      alert(on){
+        document.body.classList.toggle('mech-alert',!!on);
+        if(on)this.rest(3);else this.rest(1);
+      },
+      pause(){anims.forEach(a=>a.pause());},
+      resume(){anims.forEach(a=>a.play());}
+    };
+  })();
+  Mech.start();
+
+  // El mecanismo sigue a la app: corre con el cronómetro, se enciende
+  // cuando algo se guarda, late cuando una alarma suena.
+  ['swToggle','swStop'].forEach(n=>wrapAfter(n,()=>{
+    Mech.rest(document.getElementById('swTime').classList.contains('running')?5:1);
+  }));
+  ['saveAlarm','saveEvent','saveBudgetModal','saveExpense','awSaveOutfit','gymStampToday']
+    .forEach(n=>wrapAfter(n,()=>Mech.burst(8,850)));
+  wrapAfter('awGenerate',()=>Mech.burst(11,1000));
+  wrapAfter('renderAlarms',()=>Mech.alert(!!document.querySelector('.alarm-card.ringing-card')));
+
+  // ── 10) SALIDA DE LO QUE SE ELIMINA ──────────────────────────────
+  // Todas las listas borran reescribiendo su HTML, así que el ítem
+  // desaparecía de un cuadro al otro. Acá se intercala la salida: la
+  // tarjeta se va y recién entonces corre el borrado real. No se toca
+  // ninguna función de los módulos, solo se las envuelve.
+  const CARD_SEL='.alarm-card,.reg-field-group,.cal-event-card,.gym-ex-row,'+
+                 '.gym-load-row,.aw-card,.aw-saved-card';
+  let lastPress=null;
+  document.addEventListener('pointerdown',(e)=>{lastPress=e.target;},{passive:true,capture:true});
+
+  function dismissCard(card,done){
+    const h=card.offsetHeight;
+    const cs=getComputedStyle(card);
+    card.classList.add('dismissing');
+    card.style.height=h+'px';
+    void card.offsetWidth;                       // fija el alto de partida
+    card.style.height='0px';
+    card.style.opacity='0';
+    card.style.transform='translate3d(30px,0,0)';
+    card.style.marginTop='0';card.style.marginBottom='0';
+    card.style.paddingTop='0';card.style.paddingBottom='0';
+    if(cs.borderBottomWidth!=='0px')card.style.borderWidth='0';
+    setTimeout(done,260);
+  }
+
+  ['deleteAlarm','deleteExpense','deleteCalEvent','gymDeleteExercise',
+   'gymDeleteLoad','awDeleteItem','awDeleteSaved'].forEach(name=>{
+    const raw=window[name];
+    if(typeof raw!=='function')return;
+    window[name]=function(){
+      const self=this,args=arguments;
+      const card=(lastPress&&lastPress.closest)?lastPress.closest(CARD_SEL):null;
+      if(!MOTION.ok||!card||card.dataset.going)return raw.apply(self,args);
+      card.dataset.going='1';
+      dismissCard(card,()=>raw.apply(self,args));
+    };
+  });
+
+  // ── 11) EL SELLO ─────────────────────────────────────────────────
+  // "Actualizar a hoy" es estampar una fecha, así que se ve como un
+  // sello: baja, golpea y el latón suelta un anillo de luz.
+  wrapAfter('gymStampToday',function(id){
+    const row=document.querySelector('.gym-load-row[data-id="'+id+'"]');
+    if(!row||!MOTION.ok)return;
+    const date=row.querySelector('.gym-load-date');
+    const btn=row.querySelector('.gym-load-update');
+    if(date){date.classList.remove('stamped');void date.offsetWidth;date.classList.add('stamped');}
+    if(btn){btn.classList.remove('stamped-glow');void btn.offsetWidth;btn.classList.add('stamped-glow');}
+  });
+
+  // ── 12) REPARTO DEL LOOKBOOK ─────────────────────────────────────
+  wrapAfter('awGenerate',()=>{
+    const card=EL.awLookCard;
+    if(!card||!MOTION.ok)return;
+    card.classList.remove('dealing');void card.offsetWidth;card.classList.add('dealing');
+  });
+
+  // ── 13) HOJA "MECANISMO" (privacidad) ────────────────────────────
+  // El espacio usado se consulta con navigator.storage.estimate(), que
+  // es una lectura local del propio navegador: no sale nada afuera.
+  window.openMechSheet=function(){
+    const ov=EL.mechOverlay;
+    if(!ov)return;
+    ov.classList.add('open');
+    const fact=EL.mechFactOffline;
+    if(fact)fact.textContent=navigator.onLine
+      ? 'Funciona completa en modo avión'
+      : 'Ahora mismo estás sin conexión y Vesta anda igual';
+    const val=EL.mechUsage,fill=EL.mechFill;
+    if(fill)fill.style.width='0';
+    if(!navigator.storage||!navigator.storage.estimate){
+      if(val)val.textContent='no disponible';
+      return;
+    }
+    navigator.storage.estimate().then(est=>{
+      const used=est.usage||0,quota=est.quota||0;
+      const mb=used/1048576;
+      if(val)val.textContent=(mb<0.1?'menos de 0,1':mb.toFixed(1).replace('.',','))+' MB';
+      // La barra crece hasta su valor: el dato se lee y además se ve.
+      if(fill)requestAnimationFrame(()=>{
+        const pct=quota?Math.min(100,Math.max(1.5,used/quota*100)):2;
+        fill.style.width=pct.toFixed(2)+'%';
+      });
+    }).catch(()=>{if(val)val.textContent='no disponible';});
+  };
+  window.closeMechSheet=function(){
+    const ov=EL.mechOverlay;
+    if(ov)ov.classList.remove('open');
+  };
+
+  // ── 14) La máquina descansa cuando nadie la mira ─────────────────
+  document.addEventListener('visibilitychange',()=>{
+    if(document.hidden)Mech.pause();else Mech.resume();
+  });
+
+  // ── 8) Recolocar el indicador cuando cambia el ancho ─────────────
+  if('ResizeObserver' in window&&bar){
+    new ResizeObserver(placeInk).observe(bar);
+  }else{
+    window.addEventListener('resize',placeInk,{passive:true});
+  }
+  window.addEventListener('orientationchange',()=>setTimeout(placeInk,180),{passive:true});
+  window.addEventListener('load',placeInk);
+  placeInk();
+  requestAnimationFrame(placeInk);
+  // La pestaña con la que arranca la app también saluda.
+  setTimeout(()=>playSignature(current),420);
+})();
 </script>
 </body>
 </html>

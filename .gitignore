@@ -1,0 +1,30 @@
+# ── Visual Studio ──────────────────────────────────────────────────
+# Carpeta de estado local del IDE: índices, configuración de "Open Folder",
+# puntos de interrupción. Es por máquina, nunca va al repositorio.
+.vs/
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+
+# ── Compilación (por si algún día se agrega un proyecto) ───────────
+[Bb]in/
+[Oo]bj/
+[Dd]ebug/
+[Rr]elease/
+
+# ── Node / herramientas ────────────────────────────────────────────
+node_modules/
+npm-debug.log*
+package-lock.json
+
+# ── Sistema operativo ──────────────────────────────────────────────
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+.DS_Store
+
+# ── Temporales ─────────────────────────────────────────────────────
+*.tmp
+*.bak
+*~
