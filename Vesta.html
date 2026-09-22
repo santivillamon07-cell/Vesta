@@ -169,10 +169,11 @@ input,textarea{font-family:inherit;}
 #bg{
   position:fixed;inset:0;z-index:0;overflow:hidden;
   background:
-    radial-gradient(ellipse 140% 90% at 12% -15%, rgba(232,184,74,0.12), transparent 58%),
-    radial-gradient(ellipse 120% 90% at 115% 8%, rgba(200,150,60,0.09), transparent 55%),
-    radial-gradient(ellipse 130% 100% at 50% 130%, rgba(200,150,60,0.10), transparent 60%),
-    linear-gradient(180deg,#140b02 0%,#0a0500 45%,#070300 100%);
+    radial-gradient(ellipse 140% 90% at 12% -15%, rgba(232,184,74,0.22), transparent 60%),
+    radial-gradient(ellipse 120% 90% at 115% 8%, rgba(200,150,60,0.17), transparent 58%),
+    radial-gradient(ellipse 130% 100% at 50% 130%, rgba(200,150,60,0.18), transparent 62%),
+    radial-gradient(ellipse 80% 60% at 50% 45%, rgba(232,184,74,0.06), transparent 70%),
+    linear-gradient(180deg,#22150a 0%,#150c04 45%,#0e0702 100%);
 }
 #bg::before{
   content:"";position:absolute;inset:-10%;pointer-events:none;
@@ -183,8 +184,8 @@ input,textarea{font-family:inherit;}
 }
 #bg::after{
   content:"";position:absolute;inset:0;
-  box-shadow:inset 0 0 22vw 4vw rgba(4,2,0,0.7);
-  background:linear-gradient(180deg,rgba(10,5,0,0.1) 0%,rgba(10,5,0,0.22) 55%,rgba(8,4,0,0.42) 100%);
+  box-shadow:inset 0 0 22vw 4vw rgba(4,2,0,0.42);
+  background:linear-gradient(180deg,rgba(10,5,0,0.04) 0%,rgba(10,5,0,0.1) 55%,rgba(8,4,0,0.24) 100%);
 }
 
 /* ── Contenedor de la app ───────────────────────────────────────── */
@@ -956,9 +957,9 @@ body.theme-light .reg-field-group{
        .04 → apenas un susurro (se intuye, no se ve)
        .09 → se lee el dibujo y se nota el giro   ← valor actual
        .16 → protagonista, compite con el contenido */
-  --mech-op:.16;
-  --mech-op-work:.26;   /* cuando la app está guardando o generando */
-  --mech-op-alert:.34;  /* cuando una alarma está sonando */
+  --mech-op:.28;
+  --mech-op-work:.4;   /* cuando la app está guardando o generando */
+  --mech-op-alert:.5;  /* cuando una alarma está sonando */
 }
 
 /* ── Iconos SVG (reemplazan a todos los emojis de la interfaz) ──────
@@ -1177,7 +1178,14 @@ body.anim-paused *,body.anim-paused *::before,body.anim-paused *::after{
   animation-direction:var(--gear-dir,normal);}
 @keyframes gearSpin{to{transform:rotate(360deg);}}
 
-/* Engranados: centros a 199 px, radios primitivos 2:1 (24 y 12 dientes).
+/* Engranados: centros a 141 unidades SVG (203,4 px), radios primitivos 2:1
+   (24 y 12 dientes), en ángulo de 235° medido desde arriba. Los dientes
+   ocupan el 46% del paso en la base y el 20% en la punta: ese juego es el
+   que deja lugar al grosor del trazo, así los dientes entran en el hueco
+   del otro sin cruzarse en ninguna vuelta (verificado cuadro a cuadro).
+   Los dos engranajes van en el mismo data-depth: si el parallax los
+   moviera distinto, se desengranarían al hacer scroll.
+   Radios primitivos 2:1 (24 y 12 dientes).
    Las duraciones respetan esa relación (72 s y 36 s) porque si no, el ojo
    nota que los dientes "patinan" aunque no sepa explicar por qué.
    Nota de calibración: la primera versión giraba a 240 s = 1,5°/s. Gira,
@@ -1185,7 +1193,7 @@ body.anim-paused *,body.anim-paused *::before,body.anim-paused *::after{
    A 5°/s y 10°/s se lee como una máquina andando sin robar atención. */
 .s1{width:300px;right:-110px;top:-120px;}
 .s1 .gear{--gear-dur:72s;}
-.s3{width:167px;right:119px;top:60px;}
+.s3{width:167.31px;right:122.94px;top:63px;}
 .s3 .gear{--gear-dur:36s;--gear-dir:reverse;}
 .s2{width:210px;left:-86px;bottom:14%;}
 .s2 .gear{--gear-dur:55s;--gear-dir:reverse;}
@@ -1218,7 +1226,7 @@ body.mech-alert .gear,body.mech-alert .mech-arm{
    de que atrás hay algo encendido. */
 .mech-haze{
   position:absolute;left:-30%;top:-10%;width:160%;height:120%;
-  background:radial-gradient(45% 32% at 50% 50%,rgba(232,184,74,0.085),transparent 70%);
+  background:radial-gradient(45% 32% at 50% 50%,rgba(232,184,74,0.15),transparent 70%);
   animation:hazeDrift 54s ease-in-out infinite alternate;
 }
 @keyframes hazeDrift{
@@ -1226,19 +1234,19 @@ body.mech-alert .gear,body.mech-alert .mech-arm{
   to{transform:translate3d(8%,-6%,0) scale(1.14);}
 }
 
-/* Pavesas: dieciocho. Suben, se apagan y vuelven a empezar. Brillan con
+/* Pavesas: treinta. Suben, se apagan y vuelven a empezar. Brillan con
    box-shadow (no con filtros extra) para que sigan siendo baratas. */
 .mote{
   position:absolute;bottom:-12px;width:var(--mote-s,3px);height:var(--mote-s,3px);border-radius:50%;
-  background:rgba(255,214,140,0.95);filter:blur(.6px);opacity:0;
-  box-shadow:0 0 6px 1px rgba(232,184,74,0.55);
+  background:rgba(255,226,165,1);filter:blur(.4px);opacity:0;
+  box-shadow:0 0 8px 2px rgba(240,190,90,0.7);
   animation:moteRise var(--mote-dur,20s) linear infinite;
   animation-delay:var(--mote-delay,0s);
 }
 @keyframes moteRise{
   0%{opacity:0;transform:translate3d(0,0,0) scale(.7);}
-  12%{opacity:var(--mote-op,.8);}
-  70%{opacity:calc(var(--mote-op,.8) * .6);}
+  12%{opacity:var(--mote-op,1);}
+  70%{opacity:calc(var(--mote-op,1) * .7);}
   100%{opacity:0;transform:translate3d(var(--mote-x,14px),-92vh,0) scale(1.15);}
 }
 .m1{left:12%;--mote-dur:21s;--mote-delay:0s;--mote-x:18px;}
@@ -1248,17 +1256,29 @@ body.mech-alert .gear,body.mech-alert .mech-arm{
 .m5{left:79%;--mote-dur:23s;--mote-delay:16s;--mote-x:20px;}
 .m6{left:91%;--mote-dur:28s;--mote-delay:8s;--mote-x:-10px;}
 .m7{left:6%;--mote-dur:19s;--mote-delay:9s;--mote-x:10px;--mote-s:2px;}
-.m8{left:20%;--mote-dur:25s;--mote-delay:14s;--mote-x:-16px;--mote-s:4px;--mote-op:.65;}
+.m8{left:20%;--mote-dur:25s;--mote-delay:14s;--mote-x:-16px;--mote-s:4px;--mote-op:.85;}
 .m9{left:36%;--mote-dur:22s;--mote-delay:2s;--mote-x:20px;--mote-s:2px;}
 .m10{left:42%;--mote-dur:29s;--mote-delay:18s;--mote-x:-8px;}
-.m11{left:55%;--mote-dur:20s;--mote-delay:7s;--mote-x:16px;--mote-s:4px;--mote-op:.65;}
+.m11{left:55%;--mote-dur:20s;--mote-delay:7s;--mote-x:16px;--mote-s:4px;--mote-op:.85;}
 .m12{left:70%;--mote-dur:26s;--mote-delay:12s;--mote-x:-20px;--mote-s:2px;}
 .m13{left:84%;--mote-dur:21s;--mote-delay:1s;--mote-x:12px;}
 .m14{left:96%;--mote-dur:24s;--mote-delay:15s;--mote-x:-18px;--mote-s:2px;}
-.m15{left:16%;--mote-dur:31s;--mote-delay:20s;--mote-x:14px;--mote-s:4px;--mote-op:.6;}
+.m15{left:16%;--mote-dur:31s;--mote-delay:20s;--mote-x:14px;--mote-s:4px;--mote-op:.8;}
 .m16{left:51%;--mote-dur:18s;--mote-delay:10s;--mote-x:-12px;--mote-s:2px;}
 .m17{left:74%;--mote-dur:28s;--mote-delay:4s;--mote-x:18px;}
 .m18{left:33%;--mote-dur:23s;--mote-delay:17s;--mote-x:-14px;--mote-s:2px;}
+.m19{left:3%;--mote-dur:22s;--mote-delay:4s;--mote-x:18px;--mote-s:2px;}
+.m20{left:10%;--mote-dur:18s;--mote-delay:17s;--mote-x:-13px;--mote-s:2px;}
+.m21{left:24%;--mote-dur:25s;--mote-delay:6s;--mote-x:-9px;--mote-s:4px;}
+.m22{left:31%;--mote-dur:23s;--mote-delay:2s;--mote-x:-9px;--mote-s:4px;}
+.m23{left:39%;--mote-dur:17s;--mote-delay:18s;--mote-x:-11px;--mote-s:2px;}
+.m24{left:46%;--mote-dur:26s;--mote-delay:18s;--mote-x:8px;--mote-s:3px;}
+.m25{left:58%;--mote-dur:17s;--mote-delay:17s;--mote-x:-12px;--mote-s:4px;}
+.m26{left:66%;--mote-dur:19s;--mote-delay:17s;--mote-x:-17px;--mote-s:3px;}
+.m27{left:77%;--mote-dur:25s;--mote-delay:21s;--mote-x:-9px;--mote-s:3px;}
+.m28{left:88%;--mote-dur:22s;--mote-delay:3s;--mote-x:-17px;--mote-s:2px;}
+.m29{left:93%;--mote-dur:26s;--mote-delay:6s;--mote-x:18px;--mote-s:4px;}
+.m30{left:60%;--mote-dur:29s;--mote-delay:10s;--mote-x:17px;--mote-s:4px;}
 
 /* ── 31 ── Salida de lo que se elimina ──────────────────────────────
    Antes, borrar algo lo hacía desaparecer de un cuadro al otro: la lista
@@ -1578,6 +1598,168 @@ img,svg,video{max-width:100%;}
 }
 
 /* ══════════════════════════════════════════════════════════════════
+ //  FONDO — lámina de ingeniería
+ //  Una cuadrícula de plano técnico (mayor cada 120px, menor cada 24px)
+ //  grabada en latón, que se desvanece hacia los bordes, y una lámpara
+ //  cálida arriba que baña el contenido. Queda entre el grano (#bg::before)
+ //  y la viñeta (#bg::after); los engranajes y las pavesas van encima.
+ //  Nada se anima: el movimiento lo pone el mecanismo.
+   ══════════════════════════════════════════════════════════════════ */
+.bg-grid{position:absolute;inset:0;pointer-events:none;
+  background-image:
+    linear-gradient(rgba(232,184,74,0.075) 1px,transparent 1px),
+    linear-gradient(90deg,rgba(232,184,74,0.075) 1px,transparent 1px),
+    linear-gradient(rgba(232,184,74,0.03) 1px,transparent 1px),
+    linear-gradient(90deg,rgba(232,184,74,0.03) 1px,transparent 1px);
+  background-size:120px 120px,120px 120px,24px 24px,24px 24px;
+  background-position:center top;
+  -webkit-mask-image:radial-gradient(ellipse 70% 60% at 50% 38%,#000 25%,transparent 88%);
+  mask-image:radial-gradient(ellipse 70% 60% at 50% 38%,#000 25%,transparent 88%);}
+.bg-lamp{position:absolute;left:50%;top:-18vh;width:min(120vw,1200px);height:70vh;transform:translateX(-50%);
+  pointer-events:none;background:radial-gradient(closest-side,rgba(255,214,140,0.13),rgba(232,184,74,0.05) 55%,transparent);}
+
+/* ══════════════════════════════════════════════════════════════════
+ //  PULIDO GENERAL
+   ══════════════════════════════════════════════════════════════════ */
+/* Foco de teclado visible y consistente en toda la app */
+:where(button,[role="button"],a,input,select,textarea):focus-visible{outline:2px solid var(--amber);outline-offset:2px;}
+::selection{background:rgba(232,184,74,0.35);color:#fff6e0;}
+/* Barras de desplazamiento finas en compu */
+@media (hover:hover){
+  .page{scrollbar-width:thin;scrollbar-color:rgba(200,150,60,0.35) transparent;}
+  .page::-webkit-scrollbar{width:8px;}
+  .page::-webkit-scrollbar-thumb{background:rgba(200,150,60,0.3);border-radius:8px;}
+}
+
+/* Presupuesto: cabecera de gastos */
+.reg-section-head{display:flex;align-items:center;justify-content:space-between;margin:18px 2px 10px;}
+.reg-section-title{font-size:15px;font-weight:650;color:var(--ink);}
+.reg-add{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--line-strong);background:rgba(232,184,74,0.1);
+  color:var(--amber);border-radius:10px;padding:7px 12px;font-size:13px;font-weight:650;cursor:pointer;
+  transition:background-color var(--dur-2) ease;}
+.reg-add:hover{background:rgba(232,184,74,0.18);}
+
+/* Presupuesto: fila de gasto con barra de proporción */
+.exp-row{gap:12px;border-left:3px solid var(--c);}
+.exp-dot{width:10px;height:10px;border-radius:50%;background:var(--c);flex-shrink:0;box-shadow:0 0 0 3px rgba(0,0,0,0.25);}
+.exp-main{flex:1;min-width:0;display:flex;flex-direction:column;gap:7px;}
+.exp-name{font-size:14px;font-weight:600;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.exp-bar{height:4px;border-radius:4px;background:rgba(200,150,60,0.12);overflow:hidden;}
+.exp-bar span{display:block;height:100%;background:var(--c);transform-origin:0 50%;border-radius:4px;
+  transition:transform var(--dur-3) var(--ease-glide);}
+.exp-amt{text-align:right;flex-shrink:0;}
+.exp-amt .reg-field-val{font-size:15px;}
+.exp-pct{font-size:11px;color:var(--faint);margin-top:2px;font-variant-numeric:tabular-nums;}
+.exp-del{flex-shrink:0;width:34px;height:34px;border-radius:10px;border:none;background:transparent;color:rgba(224,120,100,0.75);
+  display:flex;align-items:center;justify-content:center;cursor:pointer;transition:background-color var(--dur-2) ease,color var(--dur-2) ease;}
+.exp-del:hover{background:rgba(224,92,92,0.12);color:#e05c5c;}
+
+/* Leyenda con porcentaje */
+.legend-item{padding:4px 9px 4px 7px;border-radius:20px;background:rgba(30,20,8,0.45);border:1px solid var(--line);color:var(--ink);}
+.legend-pct{color:var(--faint);font-variant-numeric:tabular-nums;margin-left:5px;}
+
+/* Selector de color: muestras como botones, con anillo y visto */
+.swatches{display:grid;grid-template-columns:repeat(8,1fr);gap:9px;justify-items:center;width:100%;}
+.swatch{position:relative;width:clamp(26px,7vw,30px);height:clamp(26px,7vw,30px);border-radius:50%;border:none;padding:0;cursor:pointer;
+  background:var(--c);box-shadow:inset 0 0 0 1px rgba(255,255,255,0.14);
+  transition:transform var(--dur-1) var(--ease-spring),box-shadow var(--dur-2) ease;}
+.swatch:hover{transform:scale(1.08);}
+.swatch[aria-pressed="true"]{box-shadow:0 0 0 2px #140d05,0 0 0 4px var(--c);}
+.swatch[aria-pressed="true"]::after{content:"";position:absolute;left:50%;top:46%;width:7px;height:12px;
+  border:solid rgba(20,10,0,0.85);border-width:0 2.5px 2.5px 0;transform:translate(-50%,-50%) rotate(45deg);}
+@media (prefers-reduced-motion:reduce){.exp-bar span,.swatch{transition:none;}}
+
+/* ══════════════════════════════════════════════════════════════════
+ //  CALENDARIO — Agenda con rango (port de MeetingScheduler)
+ //  Días en círculo; el rango se pinta como una banda continua detrás
+ //  (::before), con media banda en el inicio y en el fin. El punto de
+ //  evento sigue siendo ::after. Todo con transform/opacity.
+   ══════════════════════════════════════════════════════════════════ */
+.cal-sched{background:rgba(24,15,5,0.62);border:1px solid var(--line);border-radius:22px;
+  padding:18px 16px 16px;margin-bottom:22px;-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px);
+  box-shadow:0 18px 40px -22px rgba(0,0,0,0.7);}
+.cal-head{display:flex;align-items:flex-start;gap:14px;margin-bottom:16px;}
+.cal-head-ic{flex:0 0 auto;width:46px;height:46px;border-radius:50%;display:flex;align-items:center;justify-content:center;
+  background:rgba(232,184,74,0.12);color:var(--amber);}
+.cal-title{font-size:clamp(19px,5.4vw,22px);font-weight:650;color:var(--ink);line-height:1.2;}
+.cal-desc{font-size:13px;color:var(--muted);margin-top:3px;line-height:1.4;}
+.cal-body{display:grid;grid-template-columns:1fr;gap:20px;}
+
+.cal-header-row{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:10px;}
+.cal-nav{width:40px;height:40px;border-radius:50%;border:none;background:transparent;color:var(--amber);font-size:22px;}
+.cal-nav:hover{background:rgba(232,184,74,0.1);}
+.cal-month-wrap{flex:1;overflow:hidden;text-align:center;}
+.cal-month-label{font-size:clamp(16px,4.6vw,18px);font-weight:600;color:var(--ink);margin:0;}
+.cal-month-label.swap-next{animation:calSwapNext var(--dur-2) var(--ease-glide);}
+.cal-month-label.swap-prev{animation:calSwapPrev var(--dur-2) var(--ease-glide);}
+@keyframes calSwapNext{from{opacity:0;transform:translateY(-10px);}to{opacity:1;transform:none;}}
+@keyframes calSwapPrev{from{opacity:0;transform:translateY(10px);}to{opacity:1;transform:none;}}
+
+.cal-weekdays{gap:0;margin-bottom:2px;}
+.cal-wd{font-size:11px;font-weight:700;color:var(--muted);padding:6px 0;}
+.cal-grid{column-gap:0;row-gap:4px;margin-bottom:0;}
+.cal-day{aspect-ratio:auto;height:44px;background:transparent;border:none;border-radius:0;padding:0;
+  color:var(--ink);font-size:14px;display:flex;align-items:center;justify-content:center;position:relative;cursor:pointer;}
+.cal-day:active{background:transparent;}
+.cal-day.other-month{color:rgba(232,223,200,0.3);cursor:pointer;}
+.cal-day::before{content:"";position:absolute;top:4px;bottom:4px;left:-1px;right:-1px;background:rgba(232,184,74,0.16);
+  opacity:0;transition:opacity var(--dur-2) ease;}
+.cal-day.in-range::before{opacity:1;}
+.cal-day.range-open::before{opacity:1;left:50%;}  /* la banda se superpone 1px para no dejar costuras */
+.cal-day.is-end::before{opacity:1;right:50%;}
+.cal-day-num{position:relative;z-index:1;width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;
+  transition:transform var(--dur-1) var(--ease-spring),background-color var(--dur-2) ease,color var(--dur-2) ease;}
+@media (hover:hover){.cal-day:hover .cal-day-num{transform:scale(1.05);background:rgba(232,184,74,0.1);}}
+.cal-day:active .cal-day-num{transform:scale(.95);}
+.cal-day.today .cal-day-num{color:var(--amber);font-weight:800;box-shadow:inset 0 0 0 1px var(--line-strong);}
+.cal-day.in-range .cal-day-num{color:var(--amber);}
+.cal-day.is-start .cal-day-num,.cal-day.is-end .cal-day-num{background:var(--brass);color:#241500;font-weight:800;box-shadow:none;}
+.cal-day.has-event::after{bottom:3px;width:4px;height:4px;z-index:2;}
+.cal-day.is-start.has-event::after,.cal-day.is-end.has-event::after{background:var(--amber);}
+.cal-day:focus-visible{outline:none;}
+.cal-day:focus-visible .cal-day-num{box-shadow:0 0 0 2px var(--amber);}
+
+.cal-right{display:flex;flex-direction:column;gap:14px;}
+.cal-flabel{font-size:13px;font-weight:600;color:var(--muted);margin-bottom:7px;}
+.cal-fbox{display:flex;align-items:center;gap:10px;padding:9px 9px 9px 14px;border-radius:12px;
+  border:1px solid var(--line);background:rgba(10,5,0,0.35);min-height:48px;}
+.cal-fdate{flex:1;min-width:0;font-size:14px;color:var(--ink);}
+.cal-fbox.empty .cal-fdate{color:var(--faint);}
+.cal-time{flex:0 0 auto;border:none;border-radius:9px;padding:6px 10px;background:rgba(232,184,74,0.12);
+  color:var(--amber);font-family:var(--mono-font);font-size:13px;font-weight:600;color-scheme:dark;min-width:0;}
+.cal-time:disabled{opacity:.35;}
+.cal-time:focus-visible{outline:2px solid var(--brass);outline-offset:2px;}
+.cal-switch-row{display:flex;align-items:center;justify-content:space-between;padding-top:4px;}
+.cal-switch-row label{font-size:14px;font-weight:600;color:var(--ink);}
+.cal-switch{position:relative;width:46px;height:26px;border-radius:13px;border:none;padding:0;cursor:pointer;
+  background:rgba(200,150,60,0.22);transition:background-color var(--dur-2) ease;}
+.cal-switch span{position:absolute;top:3px;left:3px;width:20px;height:20px;border-radius:50%;background:#f0e2c4;
+  box-shadow:0 2px 6px rgba(0,0,0,0.4);transition:transform var(--dur-2) var(--ease-spring);}
+.cal-switch[aria-checked="true"]{background:var(--brass);}
+.cal-switch[aria-checked="true"] span{transform:translateX(20px);}
+.cal-switch:active{transform:none;}
+.cal-switch:focus-visible{outline:2px solid var(--amber);outline-offset:3px;}
+.cal-foot{border-top:1px solid var(--line);padding-top:14px;margin-top:2px;}
+.cal-summary{margin:0 0 12px;font-size:13px;color:var(--muted);text-align:center;line-height:1.5;}
+.cal-actions{display:flex;gap:10px;}
+.cal-btn{flex:1;border-radius:12px;padding:12px;font-size:14px;font-weight:700;cursor:pointer;
+  transition:opacity var(--dur-2) ease,transform var(--dur-1) ease;}
+.cal-btn.ghost{background:transparent;border:1px solid var(--line-strong);color:var(--ink);}
+.cal-btn.solid{background:var(--amber);border:none;color:#241500;}
+.cal-btn:disabled{opacity:.4;cursor:default;}
+.cal-btn:disabled:active{transform:none;}
+
+@media (min-width:768px){
+  .cal-sched{padding:24px;}
+  .cal-body{grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:32px;}
+  .cal-right{justify-content:space-between;}
+}
+@media (prefers-reduced-motion:reduce){
+  .cal-month-label.swap-next,.cal-month-label.swap-prev{animation:none;}
+  .cal-day-num,.cal-day::before,.cal-switch span{transition:none;}
+}
+
+/* ══════════════════════════════════════════════════════════════════
  //  PRESUPUESTO — Selector de monto (ruedas de dígitos + regla)
  //  JS en "const MoneyPicker". Las marcas crecen con scaleY, no con
  //  height, para respetar la regla 2 de la casa.
@@ -1681,7 +1863,7 @@ img,svg,video{max-width:100%;}
 </style>
 </head>
 <body>
-<div id="bg"></div>
+<div id="bg"><div class="bg-grid"></div><div class="bg-lamp"></div></div>
 
 <!-- ── El mecanismo ──────────────────────────────────────────────────
      El fondo de Vesta es una máquina, no una textura. Tres engranajes
@@ -1709,13 +1891,13 @@ img,svg,video{max-width:100%;}
        de leerse. Para que se vean más o menos, no toques esto: movés
        --mech-op en :root y listo. -->
   <span class="gear-slot s1" data-depth="0.055">
-    <svg class="gear" viewBox="-104 -104 208 208" data-dur="72" data-dir="1" data-anim="spin"><path d="M0.0 -100.0L8.9 -99.6L11.0 -83.3L18.3 -82.0L25.9 -96.6L34.4 -93.9L32.1 -77.6L38.9 -74.4L50.0 -86.6L57.5 -81.8L51.1 -66.6L56.9 -61.8L70.7 -70.7L76.7 -64.1L66.6 -51.1L70.9 -45.0L86.6 -50.0L90.7 -42.1L77.6 -32.1L80.2 -25.1L96.6 -25.9L98.5 -17.2L83.3 -11.0L83.9 -3.5L100.0 0.0L99.6 8.9L83.3 11.0L82.0 18.3L96.6 25.9L93.9 34.4L77.6 32.1L74.4 38.9L86.6 50.0L81.8 57.5L66.6 51.1L61.8 56.9L70.7 70.7L64.1 76.7L51.1 66.6L45.0 70.9L50.0 86.6L42.1 90.7L32.1 77.6L25.1 80.2L25.9 96.6L17.2 98.5L11.0 83.3L3.5 83.9L-0.0 100.0L-8.9 99.6L-11.0 83.3L-18.3 82.0L-25.9 96.6L-34.4 93.9L-32.1 77.6L-38.9 74.4L-50.0 86.6L-57.5 81.8L-51.1 66.6L-56.9 61.8L-70.7 70.7L-76.7 64.1L-66.6 51.1L-70.9 45.0L-86.6 50.0L-90.7 42.1L-77.6 32.1L-80.2 25.1L-96.6 25.9L-98.5 17.2L-83.3 11.0L-83.9 3.5L-100.0 0.0L-99.6 -8.9L-83.3 -11.0L-82.0 -18.3L-96.6 -25.9L-93.9 -34.4L-77.6 -32.1L-74.4 -38.9L-86.6 -50.0L-81.8 -57.5L-66.6 -51.1L-61.8 -56.9L-70.7 -70.7L-64.1 -76.7L-51.1 -66.6L-45.0 -70.9L-50.0 -86.6L-42.1 -90.7L-32.1 -77.6L-25.1 -80.2L-25.9 -96.6L-17.2 -98.5L-11.0 -83.3L-3.5 -83.9Z"/><circle cx="0" cy="0" r="65.5"/><circle cx="0" cy="0" r="20.0"/><path d="M3.4 -21.3 L-3.4 -21.3 L-5.8 -65.3 L5.8 -65.3 ZM20.2 -7.7 L16.7 -13.6 L53.6 -37.6 L59.4 -27.6 ZM16.7 13.6 L20.2 7.7 L59.4 27.6 L53.6 37.6 ZM-3.4 21.3 L3.4 21.3 L5.8 65.3 L-5.8 65.3 ZM-20.2 7.7 L-16.7 13.6 L-53.6 37.6 L-59.4 27.6 ZM-16.7 -13.6 L-20.2 -7.7 L-59.4 -27.6 L-53.6 -37.6 Z"/></svg>
+    <svg class="gear" viewBox="-104 -104 208 208" data-dur="72" data-dir="1" data-anim="spin"><path d="M-5.05 -83.85L-2.62 -99.97L2.62 -99.97L5.05 -83.85L16.82 -82.30L23.34 -97.24L28.40 -95.88L26.58 -79.68L37.55 -75.14L47.72 -87.88L52.25 -85.26L46.30 -70.09L55.71 -62.86L68.84 -72.54L72.54 -68.84L62.86 -55.71L70.09 -46.30L85.26 -52.25L87.88 -47.72L75.14 -37.55L79.68 -26.58L95.88 -28.40L97.24 -23.34L82.30 -16.82L83.85 -5.05L99.97 -2.62L99.97 2.62L83.85 5.05L82.30 16.82L97.24 23.34L95.88 28.40L79.68 26.58L75.14 37.55L87.88 47.72L85.26 52.25L70.09 46.30L62.86 55.71L72.54 68.84L68.84 72.54L55.71 62.86L46.30 70.09L52.25 85.26L47.72 87.88L37.55 75.14L26.58 79.68L28.40 95.88L23.34 97.24L16.82 82.30L5.05 83.85L2.62 99.97L-2.62 99.97L-5.05 83.85L-16.82 82.30L-23.34 97.24L-28.40 95.88L-26.58 79.68L-37.55 75.14L-47.72 87.88L-52.25 85.26L-46.30 70.09L-55.71 62.86L-68.84 72.54L-72.54 68.84L-62.86 55.71L-70.09 46.30L-85.26 52.25L-87.88 47.72L-75.14 37.55L-79.68 26.58L-95.88 28.40L-97.24 23.34L-82.30 16.82L-83.85 5.05L-99.97 2.62L-99.97 -2.62L-83.85 -5.05L-82.30 -16.82L-97.24 -23.34L-95.88 -28.40L-79.68 -26.58L-75.14 -37.55L-87.88 -47.72L-85.26 -52.25L-70.09 -46.30L-62.86 -55.71L-72.54 -68.84L-68.84 -72.54L-55.71 -62.86L-46.30 -70.09L-52.25 -85.26L-47.72 -87.88L-37.55 -75.14L-26.58 -79.68L-28.40 -95.88L-23.34 -97.24L-16.82 -82.30Z"/><circle cx="0" cy="0" r="65.5"/><circle cx="0" cy="0" r="20.0"/><path d="M3.4 -21.3 L-3.4 -21.3 L-5.8 -65.3 L5.8 -65.3 ZM20.2 -7.7 L16.7 -13.6 L53.6 -37.6 L59.4 -27.6 ZM16.7 13.6 L20.2 7.7 L59.4 27.6 L53.6 37.6 ZM-3.4 21.3 L3.4 21.3 L5.8 65.3 L-5.8 65.3 ZM-20.2 7.7 L-16.7 13.6 L-53.6 37.6 L-59.4 27.6 ZM-16.7 -13.6 L-20.2 -7.7 L-59.4 -27.6 L-53.6 -37.6 Z"/></svg>
   </span>
-  <span class="gear-slot s3" data-depth="0.105">
-    <svg class="gear" viewBox="-58 -58 116 116" data-dur="36" data-dir="-1" data-anim="spin"><path d="M0.0 -54.0L9.6 -53.1L9.8 -36.7L16.2 -34.4L27.0 -46.8L34.9 -41.2L26.9 -26.9L31.2 -21.7L46.8 -27.0L50.8 -18.3L36.7 -9.8L37.9 -3.2L54.0 -0.0L53.1 9.6L36.7 9.8L34.4 16.2L46.8 27.0L41.2 34.9L26.9 26.9L21.7 31.2L27.0 46.8L18.3 50.8L9.8 36.7L3.2 37.9L0.0 54.0L-9.6 53.1L-9.8 36.7L-16.2 34.4L-27.0 46.8L-34.9 41.2L-26.9 26.9L-31.2 21.7L-46.8 27.0L-50.8 18.3L-36.7 9.8L-37.9 3.2L-54.0 -0.0L-53.1 -9.6L-36.7 -9.8L-34.4 -16.2L-46.8 -27.0L-41.2 -34.9L-26.9 -26.9L-21.7 -31.2L-27.0 -46.8L-18.3 -50.8L-9.8 -36.7L-3.2 -37.9Z"/><circle cx="0" cy="0" r="29.6"/><circle cx="0" cy="0" r="11.0"/><path d="M1.9 -11.7 L-1.9 -11.7 L-2.6 -29.5 L2.6 -29.5 ZM11.7 1.9 L11.7 -1.9 L29.5 -2.6 L29.5 2.6 ZM-1.9 11.7 L1.9 11.7 L2.6 29.5 L-2.6 29.5 ZM-11.7 -1.9 L-11.7 1.9 L-29.5 2.6 L-29.5 -2.6 Z"/></svg>
+  <span class="gear-slot s3" data-depth="0.055">
+    <svg class="gear" viewBox="-58 -58 116 116" data-dur="36" data-dir="-1" data-anim="spin"><path d="M-4.57 -37.72L-2.83 -53.93L2.83 -53.93L4.57 -37.72L14.91 -34.95L24.52 -48.11L29.41 -45.29L22.82 -30.39L30.39 -22.82L45.29 -29.41L48.11 -24.52L34.95 -14.91L37.72 -4.57L53.93 -2.83L53.93 2.83L37.72 4.57L34.95 14.91L48.11 24.52L45.29 29.41L30.39 22.82L22.82 30.39L29.41 45.29L24.52 48.11L14.91 34.95L4.57 37.72L2.83 53.93L-2.83 53.93L-4.57 37.72L-14.91 34.95L-24.52 48.11L-29.41 45.29L-22.82 30.39L-30.39 22.82L-45.29 29.41L-48.11 24.52L-34.95 14.91L-37.72 4.57L-53.93 2.83L-53.93 -2.83L-37.72 -4.57L-34.95 -14.91L-48.11 -24.52L-45.29 -29.41L-30.39 -22.82L-22.82 -30.39L-29.41 -45.29L-24.52 -48.11L-14.91 -34.95Z"/><circle cx="0" cy="0" r="29.6"/><circle cx="0" cy="0" r="11.0"/><path d="M1.9 -11.7 L-1.9 -11.7 L-2.6 -29.5 L2.6 -29.5 ZM11.7 1.9 L11.7 -1.9 L29.5 -2.6 L29.5 2.6 ZM-1.9 11.7 L1.9 11.7 L2.6 29.5 L-2.6 29.5 ZM-11.7 -1.9 L-11.7 1.9 L-29.5 2.6 L-29.5 -2.6 Z"/></svg>
   </span>
   <span class="gear-slot s2" data-depth="-0.075">
-    <svg class="gear" viewBox="-70 -70 140 140" data-dur="55" data-dir="-1" data-anim="spin"><path d="M0.0 -66.0L8.8 -65.4L10.5 -53.0L17.5 -51.1L25.3 -61.0L33.1 -57.1L30.0 -44.9L35.7 -40.5L46.7 -46.7L52.5 -40.0L44.9 -30.0L48.5 -23.8L61.0 -25.3L63.8 -16.9L53.0 -10.5L53.9 -3.4L66.0 0.0L65.4 8.8L53.0 10.5L51.1 17.5L61.0 25.3L57.1 33.1L44.9 30.0L40.5 35.7L46.7 46.7L40.0 52.5L30.0 44.9L23.8 48.5L25.3 61.0L16.9 63.8L10.5 53.0L3.4 53.9L-0.0 66.0L-8.8 65.4L-10.5 53.0L-17.5 51.1L-25.3 61.0L-33.1 57.1L-30.0 44.9L-35.7 40.5L-46.7 46.7L-52.5 40.0L-44.9 30.0L-48.5 23.8L-61.0 25.3L-63.8 16.9L-53.0 10.5L-53.9 3.4L-66.0 -0.0L-65.4 -8.8L-53.0 -10.5L-51.1 -17.5L-61.0 -25.3L-57.1 -33.1L-44.9 -30.0L-40.5 -35.7L-46.7 -46.7L-40.0 -52.5L-30.0 -44.9L-23.8 -48.5L-25.3 -61.0L-16.9 -63.8L-10.5 -53.0L-3.4 -53.9Z"/><circle cx="0" cy="0" r="42.1"/><circle cx="0" cy="0" r="14.0"/><path d="M2.4 -14.9 L-2.4 -14.9 L-3.7 -42.0 L3.7 -42.0 ZM14.9 -2.3 L13.5 -6.9 L38.8 -16.5 L41.0 -9.4 ZM6.8 13.5 L10.7 10.7 L27.7 31.8 L21.7 36.1 ZM-10.7 10.7 L-6.8 13.5 L-21.7 36.1 L-27.7 31.8 ZM-13.5 -6.9 L-14.9 -2.3 L-41.0 -9.4 L-38.8 -16.5 Z"/></svg>
+    <svg class="gear" viewBox="-70 -70 140 140" data-dur="55" data-dir="-1" data-anim="spin"><path d="M-4.87 -53.78L-2.59 -65.95L2.59 -65.95L4.87 -53.78L16.08 -51.55L22.84 -61.92L27.63 -59.94L25.08 -47.82L34.58 -41.47L44.80 -48.47L48.47 -44.80L41.47 -34.58L47.82 -25.08L59.94 -27.63L61.92 -22.84L51.55 -16.08L53.78 -4.87L65.95 -2.59L65.95 2.59L53.78 4.87L51.55 16.08L61.92 22.84L59.94 27.63L47.82 25.08L41.47 34.58L48.47 44.80L44.80 48.47L34.58 41.47L25.08 47.82L27.63 59.94L22.84 61.92L16.08 51.55L4.87 53.78L2.59 65.95L-2.59 65.95L-4.87 53.78L-16.08 51.55L-22.84 61.92L-27.63 59.94L-25.08 47.82L-34.58 41.47L-44.80 48.47L-48.47 44.80L-41.47 34.58L-47.82 25.08L-59.94 27.63L-61.92 22.84L-51.55 16.08L-53.78 4.87L-65.95 2.59L-65.95 -2.59L-53.78 -4.87L-51.55 -16.08L-61.92 -22.84L-59.94 -27.63L-47.82 -25.08L-41.47 -34.58L-48.47 -44.80L-44.80 -48.47L-34.58 -41.47L-25.08 -47.82L-27.63 -59.94L-22.84 -61.92L-16.08 -51.55Z"/><circle cx="0" cy="0" r="42.1"/><circle cx="0" cy="0" r="14.0"/><path d="M2.4 -14.9 L-2.4 -14.9 L-3.7 -42.0 L3.7 -42.0 ZM14.9 -2.3 L13.5 -6.9 L38.8 -16.5 L41.0 -9.4 ZM6.8 13.5 L10.7 10.7 L27.7 31.8 L21.7 36.1 ZM-10.7 10.7 L-6.8 13.5 L-21.7 36.1 L-27.7 31.8 ZM-13.5 -6.9 L-14.9 -2.3 L-41.0 -9.4 L-38.8 -16.5 Z"/></svg>
   </span>
 
   <!-- Péndulo regulador: lo que le da vida al fondo. Los engranajes giran
@@ -1731,13 +1913,17 @@ img,svg,video{max-width:100%;}
     </svg>
   </span>
 
-  <!-- Pavesas: dieciocho, con tamaños y brillos distintos. -->
+  <!-- Pavesas: treinta, con tamaños y brillos distintos. -->
   <span class="mote m1"></span><span class="mote m2"></span><span class="mote m3"></span>
   <span class="mote m4"></span><span class="mote m5"></span><span class="mote m6"></span>
   <span class="mote m7"></span><span class="mote m8"></span><span class="mote m9"></span>
   <span class="mote m10"></span><span class="mote m11"></span><span class="mote m12"></span>
   <span class="mote m13"></span><span class="mote m14"></span><span class="mote m15"></span>
   <span class="mote m16"></span><span class="mote m17"></span><span class="mote m18"></span>
+  <span class="mote m19"></span><span class="mote m20"></span><span class="mote m21"></span>
+  <span class="mote m22"></span><span class="mote m23"></span><span class="mote m24"></span>
+  <span class="mote m25"></span><span class="mote m26"></span><span class="mote m27"></span>
+  <span class="mote m28"></span><span class="mote m29"></span><span class="mote m30"></span>
 </div>
 <div class="app">
 
@@ -1830,11 +2016,9 @@ img,svg,video{max-width:100%;}
         <svg class="reg-field-icon" viewBox="0 0 24 24" fill="none" stroke="#4a8c3a" stroke-width="1.8" stroke-linecap="round"><path d="M20 6L9 17l-5-5"/></svg>
       </div>
     </div>
-    <div style="display:flex;align-items:center;justify-content:space-between;margin:14px 0 10px;padding:0 2px;">
-      <div style="font-size:clamp(8px,2.5vw,10px);font-weight:700;letter-spacing:2px;color:rgba(180,140,80,0.45);text-transform:uppercase;">Gastos</div>
-      <button onclick="openExpenseModal()" style="display:flex;align-items:center;gap:5px;background:rgba(100,70,20,0.3);border:1.5px solid rgba(200,150,60,0.5);color:#e8b84a;border-radius:10px;padding:5px 12px;font-size:clamp(11px,3vw,12px);font-weight:700;cursor:pointer;">
-        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>AGREGAR
-      </button>
+    <div class="reg-section-head">
+      <div class="reg-section-title">Gastos</div>
+      <button class="reg-add" onclick="openExpenseModal()"><span data-icon="plus" data-icon-size="14"></span>Agregar gasto</button>
     </div>
     <div id="expenseList" class="reg-fields stagger" style="gap:8px;margin-bottom:20px;"></div>
     <div id="expenseEmpty" style="text-align:center;color:rgba(180,140,80,0.3);font-size:clamp(12px,3.5vw,13px);padding:8px 0 20px;">Sin gastos registrados</div>
@@ -1862,8 +2046,8 @@ img,svg,video{max-width:100%;}
       <input type="hidden" id="expenseAmount">
       <div id="expensePicker"></div>
       <div style="margin-bottom:14px;">
-        <div style="font-size:clamp(9px,2.5vw,10px);font-weight:700;letter-spacing:2px;color:rgba(160,120,60,0.5);text-transform:uppercase;margin-bottom:8px;text-align:center;">Color en el gráfico</div>
-        <div id="colorPicker" style="display:grid;grid-template-columns:repeat(8,1fr);gap:8px;justify-items:center;width:100%;"></div>
+        <div style="font-size:clamp(9px,2.5vw,10px);font-weight:700;letter-spacing:2px;color:rgba(160,120,60,0.5);text-transform:uppercase;margin-bottom:8px;text-align:center;">Color en el gráfico: <span id="colorName" style="color:var(--ink);letter-spacing:.5px;text-transform:none;"></span></div>
+        <div id="colorPicker" class="swatches" role="group" aria-label="Color en el gráfico"></div>
       </div>
       <div class="mini-btns">
         <button class="mini-cancel" onclick="closeExpenseModal()">Cancelar</button>
@@ -1875,30 +2059,65 @@ img,svg,video{max-width:100%;}
 
   <!-- CALENDARIO -->
   <div class="page" id="page-calendario">
-    <div class="cal-header-row">
-      <div>
-        <span class="cal-year-label" id="calYear">2024</span>
-        <div class="cal-month-label" id="calMonth">Enero</div>
-      </div>
-      <div style="display:flex;gap:8px;">
-        <button class="cal-nav" onclick="calMove(-1)">‹</button>
-        <button class="cal-nav" onclick="calMove(1)">›</button>
+    <div class="cal-sched">
+      <header class="cal-head">
+        <span class="cal-head-ic" data-icon="clock" data-icon-size="22"></span>
+        <div>
+          <div class="cal-title">Agenda</div>
+          <div class="cal-desc">Elegí un día o un rango y anotá tu evento.</div>
+        </div>
+      </header>
+      <div class="cal-body">
+        <section class="cal-left">
+          <div class="cal-header-row">
+            <button class="cal-nav" onclick="calMove(-1)" aria-label="Mes anterior">‹</button>
+            <div class="cal-month-wrap"><div class="cal-month-label" id="calMonth" aria-live="polite">Enero</div></div>
+            <button class="cal-nav" onclick="calMove(1)" aria-label="Mes siguiente">›</button>
+          </div>
+          <div class="cal-weekdays">
+            <div class="cal-wd">Lu</div><div class="cal-wd">Ma</div><div class="cal-wd">Mi</div>
+            <div class="cal-wd">Ju</div><div class="cal-wd">Vi</div><div class="cal-wd">Sá</div>
+            <div class="cal-wd">Do</div>
+          </div>
+          <div class="cal-grid" id="calGrid"></div>
+        </section>
+        <section class="cal-right">
+          <div class="cal-field">
+            <div class="cal-flabel">Inicio</div>
+            <div class="cal-fbox" id="calStartBox">
+              <span class="cal-fdate" id="calStartTxt">Elegí una fecha</span>
+              <input class="cal-time" id="calStartTime" type="time" value="09:00" aria-label="Hora de inicio" onchange="calSetTime('from',this.value)">
+            </div>
+          </div>
+          <div class="cal-field">
+            <div class="cal-flabel">Fin</div>
+            <div class="cal-fbox" id="calEndBox">
+              <span class="cal-fdate" id="calEndTxt">Elegí una fecha</span>
+              <input class="cal-time" id="calEndTime" type="time" value="10:00" aria-label="Hora de fin" onchange="calSetTime('to',this.value)">
+            </div>
+          </div>
+          <div class="cal-switch-row">
+            <label for="calAllDay">Todo el día</label>
+            <button type="button" class="cal-switch" id="calAllDay" role="switch" aria-checked="true" onclick="calToggleAllDay()"><span></span></button>
+          </div>
+          <div class="cal-foot">
+            <p class="cal-summary" id="calSummary">Elegí un día para empezar.</p>
+            <div class="cal-actions">
+              <button type="button" class="cal-btn ghost" onclick="calClearRange()">Cancelar</button>
+              <button type="button" class="cal-btn solid" id="calScheduleBtn" onclick="calSchedule()" disabled>Anotar evento</button>
+            </div>
+          </div>
+        </section>
       </div>
     </div>
-    <div class="cal-weekdays">
-      <div class="cal-wd">Do</div><div class="cal-wd">Lu</div>
-      <div class="cal-wd">Ma</div><div class="cal-wd">Mi</div>
-      <div class="cal-wd">Ju</div><div class="cal-wd">Vi</div>
-      <div class="cal-wd">Sa</div>
-    </div>
-    <div class="cal-grid" id="calGrid"></div>
     <div class="cal-events-section">
       <div class="cal-events-title" id="calEventsTitle">Eventos</div>
       <div id="calEventsList" class="stagger"></div>
     </div>
   </div>
 
-  <!-- ARMARIO INTELIGENTE -->
+  
+<!-- ARMARIO INTELIGENTE -->
   <div class="page" id="page-armario">
     <div class="aw-wrap">
       <div class="aw-scroll">
@@ -2182,6 +2401,7 @@ const ICON=(()=>{
     alert:'<path d="M12 3.7 2.9 19.3a1.2 1.2 0 0 0 1 1.8h16.2a1.2 1.2 0 0 0 1-1.8z"/><path d="M12 9.4v4.3"/><path d="M12 17.3h.01" stroke-width="2.2"/>',
     info:'<circle cx="12" cy="12" r="8.7"/><path d="M12 11.2v5.1"/><path d="M12 7.7h.01" stroke-width="2.2"/>',
     bell:'<path d="M18 9.4a6 6 0 1 0-12 0c0 5.1-2.1 6.2-2.1 6.2h16.2S18 14.5 18 9.4"/><path d="M13.7 19.4a2 2 0 0 1-3.4 0"/>',
+    clock:'<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>',
     calendar:'<rect x="3.2" y="4.6" width="17.6" height="16.2" rx="3"/><path d="M3.2 9.6h17.6"/><path d="M8.2 2.7v3.6M15.8 2.7v3.6"/>',
     music:'<path d="M9.1 17.6V6.3l10-2v11"/><circle cx="6.5" cy="17.7" r="2.6"/><circle cx="16.5" cy="15.4" r="2.6"/>',
     video:'<rect x="2.6" y="5.9" width="13.2" height="12.2" rx="2.8"/><path d="m21.4 8.1-5.6 3.9 5.6 3.9z"/>',
@@ -2773,28 +2993,67 @@ function renderLaps(){
 let salary=null;
 const expenses=[];
 const CCSS_RATE=0.1067;
+// Paleta de gastos: 16 colores elegidos por distancia perceptual (OKLab)
+// sobre el fondo oscuro. La pareja más parecida está a 0,103 (la paleta
+// anterior tenía pares a 0,067: rojo/carmesí, cian/azul cielo…), y todos
+// quedan lejos del verde de "Disponible" y del gris lila de la CCSS, así
+// ningún gasto se confunde con esos dos. Ordenados por tono para el selector.
 const EXPENSE_COLORS=[
-  {hex:'#e6394a'},  // rojo
-  {hex:'#f0651a'},  // naranja
-  {hex:'#f59e0b'},  // ámbar
-  {hex:'#f4d010'},  // dorado
-  {hex:'#a3c220'},  // lima
-  {hex:'#35b86a'},  // verde esmeralda
-  {hex:'#12b3a0'},  // turquesa
-  {hex:'#1fb6e0'},  // cian
-  {hex:'#2f8fe6'},  // azul cielo
-  {hex:'#3a5fe0'},  // azul
-  {hex:'#6a4fe0'},  // índigo
-  {hex:'#9b3fe0'},  // violeta
-  {hex:'#c23ad0'},  // púrpura
-  {hex:'#e23a9e'},  // magenta
-  {hex:'#f0568f'},  // rosa
-  {hex:'#c0264d'},  // carmesí
-  {hex:'#9c6b3f'},  // marrón
-  {hex:'#8a8f2e'},  // oliva
-  {hex:'#4f93a8'},  // azul acero
-  {hex:'#d98c5f'}   // terracota
+  {hex:'#e5484d',name:'Rojo'},
+  {hex:'#f0772d',name:'Naranja'},
+  {hex:'#ad7a4a',name:'Canela'},
+  {hex:'#f7cd22',name:'Dorado'},
+  {hex:'#aba232',name:'Oliva'},
+  {hex:'#00bc70',name:'Esmeralda'},
+  {hex:'#3fe3b4',name:'Menta'},
+  {hex:'#369791',name:'Petróleo'},
+  {hex:'#12aedb',name:'Cian'},
+  {hex:'#8edefe',name:'Celeste'},
+  {hex:'#4782eb',name:'Azul'},
+  {hex:'#b1b0ef',name:'Lavanda'},
+  {hex:'#ab84fa',name:'Violeta'},
+  {hex:'#f5a3e6',name:'Rosa'},
+  {hex:'#ce5393',name:'Frambuesa'},
+  {hex:'#f1e9da',name:'Marfil'}
 ];
+// Distancia perceptual entre dos colores (OKLab): la usan la migración y
+// la elección automática del color más distinto a los que ya usás.
+function colorLab(hex){
+  const lin=c=>{c/=255;return c<=0.04045?c/12.92:Math.pow((c+0.055)/1.055,2.4);};
+  const r=lin(parseInt(hex.slice(1,3),16)),g=lin(parseInt(hex.slice(3,5),16)),b=lin(parseInt(hex.slice(5,7),16));
+  const l=Math.cbrt(0.4122214708*r+0.5363325363*g+0.0514459929*b);
+  const m=Math.cbrt(0.2119034982*r+0.6806995451*g+0.1073969566*b);
+  const q=Math.cbrt(0.0883024619*r+0.2817188376*g+0.6299787005*b);
+  return [0.2104542553*l+0.793617785*m-0.0040720468*q,1.9779984951*l-2.428592205*m+0.4505937099*q,0.0259040371*l+0.7827717662*m-0.808675766*q];
+}
+function colorDist(a,b){const A=colorLab(a),B=colorLab(b);return Math.hypot(A[0]-B[0],A[1]-B[1],A[2]-B[2]);}
+// El color de la paleta más lejano a todos los que ya están en el gráfico
+function expenseNextColor(){
+  const used=expenses.map(e=>e.color).filter(Boolean);
+  if(!used.length)return EXPENSE_COLORS[0].hex;
+  let best=EXPENSE_COLORS[0].hex,bestD=-1;
+  EXPENSE_COLORS.forEach(c=>{
+    const dmin=Math.min(...used.map(u=>colorDist(c.hex,u)));
+    if(dmin>bestD){bestD=dmin;best=c.hex;}
+  });
+  return best;
+}
+// Una sola vez: pasa los gastos guardados con la paleta vieja a la nueva,
+// dándole a cada uno el color nuevo más cercano que todavía esté libre.
+function expenseMigratePalette(){
+  try{if(localStorage.getItem('bat_palette_v2'))return;}catch(e){return;}
+  const pal=EXPENSE_COLORS.map(c=>c.hex),free=new Set(pal);
+  let changed=false;
+  expenses.forEach(e=>{
+    if(e.color&&pal.includes(e.color)){free.delete(e.color);return;}
+    const pool=free.size?[...free]:pal;
+    let best=pool[0],bd=Infinity;
+    pool.forEach(h=>{const d=e.color?colorDist(h,e.color):0;if(d<bd){bd=d;best=h;}});
+    e.color=best;free.delete(best);changed=true;
+  });
+  try{localStorage.setItem('bat_palette_v2','1');}catch(e){}
+  if(changed)saveStorage();
+}
 let selectedColor=EXPENSE_COLORS[0].hex;
 function fmtMoney(v){if(v===null||isNaN(v))return '—';return '₡'+Math.round(v).toLocaleString('es-CR');}
 // Color EXCLUSIVO para la reducción de la Caja (CCSS).
@@ -2839,11 +3098,16 @@ function updateDonut(){
   if (salary === null || salary <= 0) return;
 
   // Arrancamos arriba (12 en punto = CIRC/4) y restamos cada segmento.
-  let offset = -CIRC / 2;   // arranca arriba (12 en punto) y avanza en sentido horario
+  let offset = -CIRC / 2;
+  const SEG_GAP = 1.6;
+  const pctTxt = v => { const p = v / salary * 100; return p < 10 ? p.toFixed(1) + '%' : Math.round(p) + '%'; };
+  const esc = t => String(t).replace(/&/g,'&amp;').replace(/</g,'&lt;');   // arranca arriba (12 en punto) y avanza en sentido horario
   const drawSeg = (frac, color) => {
     frac = Math.max(0, Math.min(frac, 1));
     if (frac <= 0) return;
-    const dash = frac * CIRC;
+    // 1,6 unidades de separación entre porciones: se leen como piezas
+    // distintas aunque dos colores queden uno al lado del otro.
+    const dash = Math.max(0.6, frac * CIRC - SEG_GAP);
     const gap  = CIRC - dash;   // el hueco completa justo la vuelta (clave: NO usar CIRC entero)
     const c = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
     c.setAttribute('cx', '130');
@@ -2871,19 +3135,19 @@ function updateDonut(){
 
   // 2) REDUCCIÓN DE LA CAJA (CCSS) — color exclusivo, fracción sobre el bruto
   drawSeg(ccss / salary, CCSS_COLOR);
-  legend.innerHTML += `<div class="legend-item"><div class="legend-dot" style="background:${CCSS_COLOR};"></div>Caja (CCSS)</div>`;
+  legend.innerHTML += `<div class="legend-item"><div class="legend-dot" style="background:${CCSS_COLOR};"></div>Caja (CCSS)<span class="legend-pct">${pctTxt(ccss)}</span></div>`;
 
   // 3) UN SEGMENTO POR CADA GASTO (fracción sobre el bruto)
   expenses.forEach((e, i) => {
     const color = e.color || EXPENSE_COLORS[i % EXPENSE_COLORS.length].hex;
     drawSeg(e.amount / salary, color);
-    legend.innerHTML += `<div class="legend-item"><div class="legend-dot" style="background:${color};"></div>${e.name}</div>`;
+    legend.innerHTML += `<div class="legend-item"><div class="legend-dot" style="background:${color};"></div>${esc(e.name)}<span class="legend-pct">${pctTxt(e.amount)}</span></div>`;
   });
 
   // 4) Segmento "Disponible" (verde) para lo que sobra del neto
   if (available > 0) {
     drawSeg(available / salary, '#4a8c3a');
-    legend.innerHTML += `<div class="legend-item"><div class="legend-dot" style="background:#4a8c3a;"></div>Disponible</div>`;
+    legend.innerHTML += `<div class="legend-item"><div class="legend-dot" style="background:#4a8c3a;"></div>Disponible<span class="legend-pct">${pctTxt(available)}</span></div>`;
   }
 
   // Si estamos en la vista de presupuesto, re-disparamos el barrido para que
@@ -2908,16 +3172,27 @@ function renderExpenses(){
   if(!list)return;
   if(expenses.length===0){list.innerHTML='';if(empty)empty.style.display='block';_expensePrevAmounts={};return;}
   if(empty)empty.style.display='none';
-  list.innerHTML=expenses.map(e=>{
+  // Cada gasto muestra su parte del sueldo neto como barra y porcentaje
+  const net=salary!==null&&salary>0?salary*(1-CCSS_RATE):null;
+  const frag=document.createDocumentFragment();
+  expenses.forEach(e=>{
     const isNewOrChanged=_expensePrevAmounts[e.id]!==e.amount;
     _expensePrevAmounts[e.id]=e.amount;
-    return `
-    <div class="reg-field-group" style="cursor:default;border-left:3px solid ${e.color};">
-      <div style="width:11px;height:11px;border-radius:50%;background:${e.color};flex-shrink:0;margin-right:4px;"></div>
-      <div class="reg-field-left" style="flex:1"><div class="reg-field-title">${e.name}</div><div class="reg-field-val${isNewOrChanged?' phosphor-flash':''}">${fmtMoney(e.amount)}</div></div>
-      <button onclick="deleteExpense('${e.id}')" style="background:none;border:none;color:#a06050;font-size:20px;cursor:pointer;padding:2px 4px;opacity:0.6;line-height:1;">×</button>
-    </div>`;
-  }).join('');
+    const pct=net?e.amount/net:null;
+    const row=document.createElement('div');
+    row.className='reg-field-group exp-row';row.style.setProperty('--c',e.color||'#c8983a');
+    row.innerHTML=`<span class="exp-dot" aria-hidden="true"></span>
+      <div class="exp-main"><div class="exp-name"></div>
+        <div class="exp-bar" aria-hidden="true"><span style="transform:scaleX(${pct?Math.min(1,pct).toFixed(4):0})"></span></div></div>
+      <div class="exp-amt"><div class="reg-field-val${isNewOrChanged?' phosphor-flash':''}">${fmtMoney(e.amount)}</div>
+        <div class="exp-pct">${pct!==null?(pct*100).toFixed(pct<0.1?1:0)+'% del neto':''}</div></div>
+      <button class="exp-del" aria-label="Eliminar gasto">${ICON.trash(17)}</button>`;
+    row.querySelector('.exp-name').textContent=e.name;
+    row.querySelector('.exp-del').setAttribute('aria-label','Eliminar '+e.name);
+    row.querySelector('.exp-del').addEventListener('click',()=>deleteExpense(e.id));
+    frag.appendChild(row);
+  });
+  list.replaceChildren(frag);
 }
 // ── Selector de monto (port en JS nativo de rare-ui/animated-counter) ─
 // Reemplaza los <input type="number"> de sueldo y gasto. El número se
@@ -3092,25 +3367,29 @@ function saveBudgetModal(){
   salary=v;closeBudgetModal();renderBudgetFields();saveStorage();showBanner('Sueldo guardado',3000,'ok');
 }
 function openExpenseModal(){
-  selectedColor=EXPENSE_COLORS[0].hex;
+  selectedColor=expenseNextColor();
   document.getElementById('expenseName').value='';
   MoneyPicker.open('expenseAmount',0);
   const cp=document.getElementById('colorPicker');
-  cp.innerHTML='';
-  EXPENSE_COLORS.forEach(c=>{
-    const d=document.createElement('div');
-    d.style.cssText=`width:clamp(22px,6vw,28px);height:clamp(22px,6vw,28px);border-radius:50%;background:${c.hex};cursor:pointer;border:2.5px solid ${c.hex===selectedColor?'#fff':'transparent'};box-sizing:border-box;`;
-    d.dataset.color=c.hex;
-    d.addEventListener('click',()=>selectExpenseColor(c.hex,d));
-    cp.appendChild(d);
-  });
+  cp.replaceChildren(...EXPENSE_COLORS.map(c=>{
+    const b=document.createElement('button');
+    b.type='button';b.className='swatch';b.dataset.color=c.hex;
+    b.style.setProperty('--c',c.hex);
+    b.setAttribute('aria-label',c.name);b.title=c.name;
+    b.setAttribute('aria-pressed',String(c.hex===selectedColor));
+    b.addEventListener('click',()=>selectExpenseColor(c.hex));
+    return b;
+  }));
+  selectExpenseColor(selectedColor);
   document.getElementById('expenseModalOverlay').classList.add('open');
   setTimeout(()=>document.getElementById('expenseName').focus(),100);
 }
 function closeExpenseModal(){document.getElementById('expenseModalOverlay').classList.remove('open');}
-function selectExpenseColor(hex,el){
+function selectExpenseColor(hex){
   selectedColor=hex;
-  document.querySelectorAll('#colorPicker div').forEach(d=>{d.style.borderColor=d.dataset.color===hex?'#fff':'transparent';});
+  document.querySelectorAll('#colorPicker .swatch').forEach(d=>d.setAttribute('aria-pressed',String(d.dataset.color===hex)));
+  const c=EXPENSE_COLORS.find(x=>x.hex===hex);
+  const n=document.getElementById('colorName');if(n)n.textContent=c?c.name:'';
 }
 function saveExpense(){
   const name=document.getElementById('expenseName').value.trim();
@@ -3128,110 +3407,195 @@ function deleteExpense(id){
 }
 
 
-// ── 7) CALENDARIO ──────────────────────────────────────────────────────
-const calEvents = {}; // key: "YYYY-MM-DD" -> [{id, text}]
-let calCurrent = new Date();
-let calSelectedKey = null;
+// ── 7) CALENDARIO — Agenda con rango de fechas ─────────────────────────
+// Port en JS nativo de MeetingScheduler (shadcn + framer-motion), adaptado
+// a Vesta: semana de lunes a domingo, textos en español y guardado local.
+// Flujo: tocás un día (inicio), tocás otro (fin) y "Anotar evento" abre la
+// hoja para escribirlo. Tocar un día anterior al inicio lo reemplaza;
+// con el rango completo, el próximo toque empieza uno nuevo. Un solo día
+// también vale (sin fin). "Todo el día" apaga las horas.
+// Modelo: calEvents["YYYY-MM-DD" (inicio)] = [{id,text,end?,allDay,from,to}]
+// Los eventos viejos ({id,text}) siguen funcionando como eventos de un día.
+const calEvents = {};
+let calCurrent = new Date(); calCurrent.setDate(1);
 let calEventEditId = null;
+const calSel = {start:null,end:null,allDay:true,from:'09:00',to:'10:00'};
 
 const MONTHS_ES = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+const MONTHS_ES_ABBR = ['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];
 
 function calKey(y,m,d){return `${y}-${String(m+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;}
 function calKeyParts(k){const[y,m,d]=k.split('-');return{y:+y,m:+m-1,d:+d};}
-
-function calDisplayDate(k){
-  const{y,m,d}=calKeyParts(k);
-  return `${d} de ${MONTHS_ES[m]} ${y}`;
+function calKeyDate(k){const p=calKeyParts(k);return new Date(p.y,p.m,p.d);}
+function calDateKey(dt){return calKey(dt.getFullYear(),dt.getMonth(),dt.getDate());}
+function calDisplayDate(k){const{y,m,d}=calKeyParts(k);return `${d} de ${MONTHS_ES[m]} ${y}`;}
+function calShort(k){const{m,d}=calKeyParts(k);return `${d} ${MONTHS_ES_ABBR[m]}`;}
+// "09:30" → "9:30 a. m." (mismo formato de 12 h que las alarmas)
+function calTime(t){
+  if(!t)return '';
+  const[h,mm]=t.split(':').map(Number);
+  return `${h%12||12}:${String(mm).padStart(2,'0')} ${h<12?'a. m.':'p. m.'}`;
+}
+// Texto de un rango/evento: "14 jul – 20 jul · 9:00 a. m. – 10:00 a. m."
+function calRangeLabel(start,end,allDay,from,to){
+  let s=end&&end!==start?`${calShort(start)} – ${calShort(end)}`:calDisplayDate(start);
+  if(!allDay&&from)s+=` · ${calTime(from)} – ${calTime(to||from)}`;
+  return s;
 }
 
-function renderCalendar(){
+// Qué días tocan algún evento (los rangos pintan todos sus días)
+function calCoverage(){
+  const cov=new Set();
+  Object.keys(calEvents).forEach(k=>{
+    (calEvents[k]||[]).forEach(ev=>{
+      cov.add(k);
+      if(ev.end&&ev.end>k){
+        const dt=calKeyDate(k);
+        for(let i=0;i<400;i++){dt.setDate(dt.getDate()+1);const kk=calDateKey(dt);cov.add(kk);if(kk>=ev.end)break;}
+      }
+    });
+  });
+  return cov;
+}
+
+// Arma la grilla del mes (de lunes a domingo, con los días de los meses
+// vecinos para completar las semanas). Solo se reconstruye al cambiar de
+// mes o de eventos; elegir días solo cambia clases (ver calPaint).
+function renderCalendar(dir){
   const y=calCurrent.getFullYear(),mo=calCurrent.getMonth();
-  document.getElementById('calYear').textContent=y;
-  document.getElementById('calMonth').textContent=MONTHS_ES[mo];
+  const label=document.getElementById('calMonth');
+  label.textContent=`${MONTHS_ES[mo]} ${y}`;
+  if(dir){label.classList.remove('swap-next','swap-prev');void label.offsetWidth;label.classList.add(dir>0?'swap-next':'swap-prev');}
   const grid=document.getElementById('calGrid');
-  grid.innerHTML='';
-  const today=new Date();
-  const todayKey=calKey(today.getFullYear(),today.getMonth(),today.getDate());
-  const firstDay=new Date(y,mo,1).getDay();
-  const daysInMonth=new Date(y,mo+1,0).getDate();
-  const prevDays=new Date(y,mo,0).getDate();
-  // prev month fillers
-  for(let i=firstDay-1;i>=0;i--){
-    const d=document.createElement('div');d.className='cal-day other-month empty';
-    grid.appendChild(d);
+  const todayKey=calDateKey(new Date());
+  const cov=calCoverage();
+  const first=new Date(y,mo,1);
+  const lead=(first.getDay()+6)%7;                  // lunes = 0
+  const start=new Date(y,mo,1-lead);
+  const last=new Date(y,mo+1,0);
+  const total=lead+last.getDate()+((7-((lead+last.getDate())%7))%7);
+  const frag=document.createDocumentFragment();
+  for(let i=0;i<total;i++){
+    const dt=new Date(start.getFullYear(),start.getMonth(),start.getDate()+i);
+    const key=calDateKey(dt);
+    const el=document.createElement('button');
+    el.type='button';el.dataset.key=key;
+    el.className='cal-day'+(dt.getMonth()!==mo?' other-month':'')+(key===todayKey?' today':'')+(cov.has(key)?' has-event':'');
+    el.setAttribute('aria-label',calDisplayDate(key));
+    el.innerHTML=`<span class="cal-day-num">${dt.getDate()}</span>`;
+    frag.appendChild(el);
   }
-  // current month
-  for(let d=1;d<=daysInMonth;d++){
-    const key=calKey(y,mo,d);
-    const el=document.createElement('div');
-    el.className='cal-day'+(key===todayKey?' today':'')+(calEvents[key]&&calEvents[key].length?' has-event':'')+(key===calSelectedKey?' selected':'');
-    el.innerHTML=`<span class="cal-day-num">${d}</span>`;
-    el.onclick=()=>selectCalDay(key);
-    grid.appendChild(el);
-  }
+  grid.replaceChildren(frag);
+  calPaint();
   renderCalEvents();
 }
 
-function selectCalDay(key){
-  calSelectedKey=key;
-  renderCalendar();
-  openEventModal(key);
+function calPaint(){
+  const{start,end}=calSel;
+  document.querySelectorAll('#calGrid .cal-day').forEach(el=>{
+    const k=el.dataset.key;
+    const isStart=k===start,isEnd=!!end&&k===end;
+    el.classList.toggle('is-start',isStart);
+    el.classList.toggle('is-end',isEnd);
+    el.classList.toggle('in-range',!!(start&&end&&k>start&&k<end));
+    el.classList.toggle('range-open',!!(isStart&&end&&end!==start));
+    el.setAttribute('aria-pressed',String(isStart||isEnd));
+  });
+  calPaintPanel();
 }
+
+function calPaintPanel(){
+  const{start,end,allDay,from,to}=calSel;
+  document.getElementById('calStartTxt').textContent=start?calDisplayDate(start):'Elegí una fecha';
+  document.getElementById('calEndTxt').textContent=end?calDisplayDate(end):(start?'Mismo día':'Elegí una fecha');
+  document.getElementById('calStartBox').classList.toggle('empty',!start);
+  document.getElementById('calEndBox').classList.toggle('empty',!end);
+  const ts=document.getElementById('calStartTime'),te=document.getElementById('calEndTime');
+  ts.value=from;te.value=to;ts.disabled=te.disabled=allDay;
+  const sw=document.getElementById('calAllDay');
+  sw.setAttribute('aria-checked',String(allDay));
+  let sum='Elegí un día para empezar.';
+  if(start)sum='Evento: '+calRangeLabel(start,end,allDay,from,to);
+  document.getElementById('calSummary').textContent=sum;
+  document.getElementById('calScheduleBtn').disabled=!start;
+}
+
+function calDayClick(key){
+  const s=calSel;
+  if(!s.start||(s.start&&s.end)){s.start=key;s.end=null;}
+  else if(key<s.start){s.start=key;}
+  else if(key===s.start){s.end=null;}              // mismo día: evento de un día
+  else{s.end=key;}
+  calPaint();
+}
+function calToggleAllDay(){calSel.allDay=!calSel.allDay;calPaintPanel();}
+function calSetTime(which,val){if(val)calSel[which]=val;calPaintPanel();}
+function calClearRange(){calSel.start=calSel.end=null;calPaint();}
+function calSchedule(){if(calSel.start)openEventModal();}
 
 function renderCalEvents(){
   const list=document.getElementById('calEventsList');
   const title=document.getElementById('calEventsTitle');
-  // show all events for current month sorted
   const y=calCurrent.getFullYear(),mo=calCurrent.getMonth();
-  const monthKeys=Object.keys(calEvents).filter(k=>{
-    const p=calKeyParts(k);return p.y===y&&p.m===mo&&calEvents[k].length>0;
-  }).sort();
-  if(monthKeys.length===0){
+  const mStart=calKey(y,mo,1),mEnd=calKey(y,mo,new Date(y,mo+1,0).getDate());
+  const items=[];
+  Object.keys(calEvents).sort().forEach(k=>{
+    (calEvents[k]||[]).forEach(ev=>{
+      const e=ev.end||k;
+      if(k<=mEnd&&e>=mStart)items.push({k,ev});   // empieza, termina o cruza este mes
+    });
+  });
+  if(!items.length){
     title.textContent='Eventos del mes';
     list.innerHTML='<div class="cal-no-events"><div class="cal-no-icon">'+ICON.calendar(34)+'</div>Sin eventos este mes</div>';
     return;
   }
-  title.textContent=`Eventos del mes (${monthKeys.reduce((a,k)=>a+calEvents[k].length,0)})`;
-  const cards = [];
-  monthKeys.forEach(k=>{
-    calEvents[k].forEach(ev=>{
-      const card = document.createElement('div');
-      card.className = 'cal-event-card';
-      card.innerHTML = `<div style="flex:1"><div class="cal-event-text">${ev.text}</div><div class="cal-event-date">${calDisplayDate(k)}</div></div><button class="cal-event-del" aria-label="Eliminar evento">${ICON.trash(18)}</button>`;
-      card.querySelector('button').addEventListener('click', ()=>deleteCalEvent(k, ev.id));
-      cards.push(card);
-    });
+  title.textContent=`Eventos del mes (${items.length})`;
+  const frag=document.createDocumentFragment();
+  items.forEach(({k,ev})=>{
+    const card=document.createElement('div');card.className='cal-event-card';
+    const info=document.createElement('div');info.style.flex='1';
+    const t=document.createElement('div');t.className='cal-event-text';t.textContent=ev.text;
+    const d=document.createElement('div');d.className='cal-event-date';
+    d.textContent=calRangeLabel(k,ev.end,ev.allDay!==false,ev.from,ev.to);
+    info.append(t,d);
+    const del=document.createElement('button');del.className='cal-event-del';del.setAttribute('aria-label','Eliminar evento');
+    del.innerHTML=ICON.trash(18);del.addEventListener('click',()=>deleteCalEvent(k,ev.id));
+    card.append(info,del);frag.appendChild(card);
   });
-  list.innerHTML='';
-  cards.forEach(c=>list.appendChild(c));
+  list.replaceChildren(frag);
 }
 
 function calMove(dir){
-  calCurrent.setMonth(calCurrent.getMonth()+dir);
-  renderCalendar();
+  calCurrent=new Date(calCurrent.getFullYear(),calCurrent.getMonth()+dir,1);
+  renderCalendar(dir);
 }
 
-let calPendingKey=null;
-function openEventModal(key){
-  calPendingKey=key;
+function openEventModal(){
+  const{start,end,allDay,from,to}=calSel;
   calEventEditId=null;
-  document.getElementById('eventDateDisplay').textContent=calDisplayDate(key);
+  document.getElementById('eventDateDisplay').textContent=calRangeLabel(start,end,allDay,from,to);
   document.getElementById('eventTextarea').value='';
   document.getElementById('eventModalOverlay').classList.add('open');
   setTimeout(()=>document.getElementById('eventTextarea').focus(),200);
 }
 function closeEventModal(){
   document.getElementById('eventModalOverlay').classList.remove('open');
-  calPendingKey=null;calEventEditId=null;
+  calEventEditId=null;
 }
 function handleEventOverlay(e){if(e.target===document.getElementById('eventModalOverlay'))closeEventModal();}
 
 function saveEvent(){
   const text=document.getElementById('eventTextarea').value.trim();
   if(!text){showBanner('Escribí un evento',3000,'warn');return;}
-  if(!calEvents[calPendingKey])calEvents[calPendingKey]=[];
-  calEvents[calPendingKey].push({id:uid(),text});
+  const{start,end,allDay,from,to}=calSel;
+  if(!start){closeEventModal();return;}
+  const ev={id:uid(),text,allDay};
+  if(end&&end!==start)ev.end=end;
+  if(!allDay){ev.from=from;ev.to=to;}
+  (calEvents[start]=calEvents[start]||[]).push(ev);
   closeEventModal();
+  calSel.start=calSel.end=null;
   renderCalendar();
   saveStorage();
   showBanner('Evento guardado',3000,'event');
@@ -3246,6 +3610,11 @@ function deleteCalEvent(key,id){
   saveStorage();
   showBanner('Evento eliminado',3000,'danger');
 }
+
+// Un solo listener para toda la grilla (en vez de uno por día)
+document.getElementById('calGrid').addEventListener('click',e=>{
+  const d=e.target.closest('.cal-day');if(d)calDayClick(d.dataset.key);
+});
 
 
 // ── 8) PERSISTENCIA Y ARRANQUE DE LA APP ─────────────────────────────
@@ -3324,6 +3693,7 @@ function loadStorage(){
 })();
 
 loadStorage();
+expenseMigratePalette();
 renderAlarms();startWatching();renderBudgetFields();renderCalendar();
 
 // ══════════════════════════════════════════════════════════════════
