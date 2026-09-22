@@ -1333,7 +1333,11 @@ body.mech-alert .gear,body.mech-alert .mech-arm{
 .btn-seal:hover{color:var(--amber);border-color:var(--line-strong);}
 .btn-seal:active{transform:scale(.92);}
 .btn-seal:active .ico{transform:rotate(60deg);}
-.header{align-items:center;}
+.header{align-items:center;gap:10px;}
+/* El título ocupa el espacio libre y los dos botones quedan juntos a la
+   derecha. Antes el botón del mecanismo flotaba en el medio en pantallas
+   anchas (space-between reparte 3 elementos). */
+.header-left{flex:1;min-width:0;}
 
 /* ── 35 ── La placa de privacidad ───────────────────────────────────
    Se lee como una placa grabada: filas a dos columnas, sin iconos ni
@@ -4793,6 +4797,17 @@ if (SW_OK) {
           console.info('[Vesta] Sin Service Worker:', err && err.message);
         }
       });
+  });
+
+  // Cuando un Service Worker nuevo toma el control (subiste una versión),
+  // se recarga UNA vez para mostrarla ya, en vez de esperar a la próxima
+  // apertura. Si es la primera instalación (no había controlador), no.
+  let swHadController = !!navigator.serviceWorker.controller, swReloaded = false;
+  navigator.serviceWorker.addEventListener('controllerchange', () => {
+    if (!swHadController) { swHadController = true; return; }
+    if (swReloaded) return;
+    swReloaded = true;
+    location.reload();
   });
 
   // El SW nos avisa cuando el usuario toca una notificación.

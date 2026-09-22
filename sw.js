@@ -13,7 +13,7 @@
 //      (más confiable en Android/Chrome que "new Notification()" directo).
 //   3) Que al tocar la notificación se enfoque/abra la app.
 
-const CACHE_NAME = 'vesta-cache-v8';
+const CACHE_NAME = 'vesta-cache-v9';
 const CORE_ASSETS = [
   './',
   './Vesta.html',
@@ -77,7 +77,11 @@ self.addEventListener('fetch', (event) => {
     event.respondWith(
       caches.open(CACHE_NAME).then(async (cache) => {
         try {
-          const fresh = await fetch(req);
+          // cache:'no-cache' obliga a preguntarle a GitHub si hay versión
+          // nueva. Sin esto, el navegador podía servir su propia copia HTTP
+          // (GitHub Pages la marca válida por 10 minutos) y seguías viendo
+          // la versión anterior aunque ya hubieras subido la nueva.
+          const fresh = await fetch(req.url, { cache: 'no-cache', credentials: 'same-origin' });
           if (fresh && fresh.status === 200) {
             cache.put(req, fresh.clone());
           }
