@@ -17,7 +17,9 @@
   Velocidad del mecanismo             → "const Mech" (módulo JS)
   Iconos                              → "const ICON" (JS, sección 0)
   Avisos y sus tonos                  → "function showBanner"
-  Una pestaña entera                  → "<!-- ALARMAS -->", "<!-- GYM -->"…
+  Una pestaña entera                  → el comentario HTML "ALARMAS", "GYM"…
+                                        (acá no se escriben los marcadores de
+                                        comentario: cerrarían este bloque)
   La lógica de un módulo              → "ARMARIO INTELIGENTE" / "RUTINAS DE GYM"
   Privacidad / permisos de la página  → el meta Content-Security-Policy
   Qué se cachea sin conexión          → sw.js (archivo aparte)
@@ -1515,12 +1517,107 @@ body.mech-alert .gear,body.mech-alert .mech-arm{
   #donutHours,
   .reg-field-val{transition:none !important;}
 }
-/* ── RESPONSIVE: teléfono vs compu ── */
-@media (max-width: 768px){
-  /* estilos que solo aplican en teléfono */
+/* ══════════════════════════════════════════════════════════════════
+ //  RESPONSIVE — la app se acomoda sola al tamaño de la pantalla
+ //  --max   → ancho del contenido (crece con la pantalla)
+ //  --ui-max→ ancho de hojas y modales (se quedan cómodos de leer)
+ //  --pad   → margen lateral de las páginas (se achica en teléfonos chicos)
+   ══════════════════════════════════════════════════════════════════ */
+:root{--ui-max:480px;--pad:clamp(12px,4.5vw,22px);}
+.page{
+  padding-left:max(var(--pad),env(safe-area-inset-left,0px));
+  padding-right:max(var(--pad),env(safe-area-inset-right,0px));
 }
-@media (min-width: 769px){
-  /* estilos que solo aplican en compu */
+.modal,.event-modal,.aw-sheet{max-width:min(100%,var(--ui-max));}
+.tab-bar{max-width:min(var(--max),560px);}
+img,svg,video{max-width:100%;}
+
+/* Teléfonos chicos (SE, mini) */
+@media (max-width:360px){
+  .aw-grid{column-gap:8px;}
+  .aw-card{margin-bottom:8px;}
+  .aw-look-card{flex-basis:88%;}
+}
+/* Tablet / teléfono acostado */
+@media (min-width:600px){
+  :root{--max:720px;}
+  .aw-grid{columns:3;}
+  .aw-look-card{flex-basis:calc(50% - 7px);}
+  #alarmList{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;align-items:start;}
+  #alarmList>.alarm-card{margin-bottom:0;}
+}
+/* Compu */
+@media (min-width:1024px){
+  :root{--max:1040px;}
+  .aw-grid{columns:4;column-gap:14px;}
+  .aw-card{margin-bottom:14px;}
+  .aw-look-card{flex-basis:calc(33.333% - 10px);}
+  #alarmList{grid-template-columns:repeat(3,minmax(0,1fr));}
+}
+@media (min-width:1440px){
+  :root{--max:1180px;}
+  .aw-grid{columns:5;}
+}
+/* Pantallas bajitas (teléfono en horizontal) */
+@media (orientation:landscape) and (max-height:520px){
+  .aw-wall{height:clamp(220px,72dvh,420px);}
+}
+
+/* ══════════════════════════════════════════════════════════════════
+ //  ARMARIO — Muro derivante (port en JS nativo de DriftWall)
+ //  Las columnas se deslizan en un plano inclinado en 3D. Al pasar el
+ //  mouse (o tocar) una prenda, su columna frena y la foto se levanta.
+ //  Todo se mueve con transform/opacity; el JS vive en "AwWall".
+   ══════════════════════════════════════════════════════════════════ */
+.aw-viewbar{display:flex;gap:6px;margin:0 0 10px;}
+.aw-view{border:1px solid var(--line);background:var(--panel);color:var(--muted);border-radius:20px;
+  padding:6px 14px;font-size:12px;font-weight:700;cursor:pointer;
+  transition:background var(--dur-2) var(--ease-emph),color var(--dur-2) var(--ease-emph);}
+.aw-view.active{background:var(--brass);color:#241500;border-color:var(--brass);}
+.aw-grid.is-off,.aw-wall.is-off{display:none;}
+
+.aw-wall{
+  position:relative;width:100%;height:clamp(300px,58dvh,640px);overflow:hidden;
+  border-radius:var(--radius);margin-bottom:8px;touch-action:pan-y;
+  perspective:1200px;perspective-origin:50% 50%;
+  --dw-w:150px;--dw-h:200px;--dw-gap:14px;--dw-radius:14px;--dw-lift:56px;--dw-dim:.6;--dw-edge:40%;
+  -webkit-mask-image:
+    radial-gradient(ellipse 78% 82% at 50% 46%,#000 var(--dw-edge),transparent 100%),
+    linear-gradient(to top,#000 var(--dw-edge),transparent 100%);
+  -webkit-mask-composite:source-in;
+  mask-image:
+    radial-gradient(ellipse 78% 82% at 50% 46%,#000 var(--dw-edge),transparent 100%),
+    linear-gradient(to top,#000 var(--dw-edge),transparent 100%);
+  mask-composite:intersect;
+}
+.aw-wall .aw-empty{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;}
+.dw-plane{position:absolute;top:50%;left:50%;display:flex;transform-style:preserve-3d;
+  transform-origin:50% 50%;will-change:transform;cursor:pointer;}
+.dw-col{position:relative;width:calc(var(--dw-w) + var(--dw-gap));transform-style:preserve-3d;}
+.dw-track{display:flex;flex-direction:column;will-change:transform;transform-style:preserve-3d;}
+.dw-tile{position:relative;display:block;width:100%;height:calc(var(--dw-h) + var(--dw-gap));
+  flex:0 0 auto;outline:none;transform-style:preserve-3d;}
+.dw-inner{position:absolute;inset:calc(var(--dw-gap) / 2);display:block;border-radius:var(--dw-radius);
+  overflow:hidden;background:#140d05;opacity:var(--dw-dim);transform:translateZ(0);pointer-events:none;
+  border:1px solid rgba(255,255,255,0.06);
+  transition:transform var(--dur-3) var(--ease-glide),opacity var(--dur-3) var(--ease-glide),box-shadow var(--dur-3) var(--ease-glide);}
+.dw-inner img{width:100%;height:100%;object-fit:cover;display:block;filter:saturate(.9);
+  user-select:none;-webkit-user-drag:none;transition:filter var(--dur-3) var(--ease-glide);}
+.dw-ov{position:absolute;inset:0;background:#0a0500;opacity:.42;pointer-events:none;
+  transition:opacity var(--dur-3) var(--ease-glide);}
+.dw-cap{position:absolute;left:0;right:0;bottom:0;padding:18px 10px 8px;font-size:11px;font-weight:700;
+  color:var(--ink);background:linear-gradient(to top,rgba(8,4,0,0.85),transparent);
+  opacity:0;transform:translateY(6px);transition:opacity var(--dur-2) ease,transform var(--dur-2) var(--ease-glide);
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.dw-tile.is-active .dw-inner,.dw-tile:focus-visible .dw-inner{
+  opacity:1;transform:translateZ(var(--dw-lift));box-shadow:0 24px 60px -18px rgba(0,0,0,0.75),0 0 0 1px rgba(232,184,74,0.35);}
+.dw-tile.is-active img,.dw-tile:focus-visible img{filter:saturate(1.05);}
+.dw-tile.is-active .dw-ov,.dw-tile:focus-visible .dw-ov{opacity:0;}
+.dw-tile.is-active .dw-cap,.dw-tile:focus-visible .dw-cap{opacity:1;transform:none;}
+.dw-tile:focus-visible .dw-inner{box-shadow:0 24px 60px -18px rgba(0,0,0,0.75),0 0 0 2px var(--amber);}
+@media (prefers-reduced-motion:reduce){
+  .dw-plane,.dw-track{will-change:auto;}
+  .dw-inner,.dw-inner img,.dw-ov,.dw-cap{transition:none !important;}
 }
 </style>
 </head>
@@ -1754,7 +1851,12 @@ body.mech-alert .gear,body.mech-alert .mech-arm{
         <!-- LIBRERÍA -->
         <section class="aw-pane active" id="aw-pane-lib">
           <div class="aw-filters" id="awFilters"></div>
-          <div class="aw-grid stagger pop" id="awGrid"></div>
+          <div class="aw-viewbar" role="tablist" aria-label="Vista de la librería">
+            <button class="aw-view active" data-view="wall" role="tab" onclick="awSetView('wall')">Muro</button>
+            <button class="aw-view" data-view="grid" role="tab" onclick="awSetView('grid')">Cuadrícula</button>
+          </div>
+          <div class="aw-wall" id="awWall" role="group" aria-label="Muro de prendas"></div>
+          <div class="aw-grid stagger pop is-off" id="awGrid"></div>
         </section>
 
         <!-- ARMARIO / LOOKBOOK -->
@@ -2093,8 +2195,9 @@ function animateMoney(el,to){
   function isMobile() { return mqMobile.matches; }
 
   mqMobile.addEventListener('change', e => {
-    // acá podés reaccionar si el tamaño cruza el breakpoint
-    // (ej: rotar el teléfono, o achicar la ventana de la compu)
+    // Al cruzar el breakpoint (rotar el teléfono, achicar la ventana)
+    // el muro del Armario recalcula columnas y tamaño de fichas.
+    if(typeof AwWall!=='undefined')AwWall.relayout();
   });
 // ── 1) NAVEGACIÓN DE TABS ────────────────────────────────────────────
 // (el fondo con imagen embebida vive en el HTML/CSS, no acá)
@@ -3007,6 +3110,7 @@ renderAlarms();startWatching();renderBudgetFields();renderCalendar();
 //   4) Motor de generación        → arma outfits válidos y variados
 //   5) Sub-pestañas               → alternar Librería ↔ Armario
 //   6) Librería: filtros y grid   → catálogo de prendas
+//  6b) Librería: muro derivante   → fotos en columnas 3D que se deslizan (AwWall)
 //   7) Librería: agregar prenda   → subir foto nueva
 //   8) Lookbook                   → dibuja el carrusel de opciones generadas
 //                                    (solo las combinaciones, sin etiquetas ni títulos)
@@ -3234,6 +3338,7 @@ function awSwitchSub(sub){
   document.getElementById('aw-pane-look').classList.toggle('active',sub==='look');
   document.getElementById('awFab').classList.toggle('hidden',sub!=='lib');
   if(sub==='look'&&!awOutfitOptions.length)awGenerate();
+  if(sub==='lib')AwWall.start();
 }
 
 
@@ -3249,6 +3354,7 @@ function awSetFilter(k){awFilter=k;awRenderFilters();awRenderGrid();}
 function awRenderGrid(){
   const g=document.getElementById('awGrid');if(!g)return;
   const items=awItems.filter(it=>awFilter==='all'||it.cat===awFilter);
+  AwWall.render(items);
   if(!items.length){g.innerHTML=`<div class="aw-empty">No hay prendas en esta categoría.<br>Tocá <b>+</b> para agregar.</div>`;return;}
   g.innerHTML=items.map(it=>`
     <div class="aw-card">
@@ -3266,6 +3372,196 @@ function awDeleteItem(id,ev){
   if(awOutfit){for(const k in awOutfit){if(awOutfit[k]&&awOutfit[k].id===id){awOutfit=null;break;}}}
   awRenderGrid();awPersist();showBanner('Prenda eliminada',3000,'danger');
 }
+
+
+// ── 6b) LIBRERÍA: MURO DERIVANTE (AwWall) ────────────────────────────
+// Port en JS nativo del componente DriftWall de React Bits, adaptado a
+// Vesta: fotos verticales (3:4), columnas que dependen del ancho real
+// del muro, y el ciclo de animación se apaga solo cuando el muro no se
+// ve (otra pestaña, sub-pestaña Armario, vista Cuadrícula o app en segundo
+// plano). Mouse: pasar por encima levanta la prenda y frena su columna.
+// Táctil: tocar una prenda la levanta; tocar otra vez (o el fondo) la suelta.
+let awView='wall';           // vista de la Librería: 'wall' | 'grid'
+function awApplyView(){
+  try{const v=localStorage.getItem('aw_view');if(v==='wall'||v==='grid')awView=v;}catch(e){}
+  document.querySelectorAll('#page-armario .aw-view').forEach(b=>{
+    const on=b.dataset.view===awView;b.classList.toggle('active',on);b.setAttribute('aria-selected',on);
+  });
+  document.getElementById('awWall').classList.toggle('is-off',awView!=='wall');
+  document.getElementById('awGrid').classList.toggle('is-off',awView!=='grid');
+}
+function awSetView(v){
+  if(v===awView)return;
+  awView=v;
+  try{localStorage.setItem('aw_view',v);}catch(e){}
+  awApplyView();
+  if(v==='wall'){AwWall.relayout();AwWall.start();}
+}
+
+const AwWall=(()=>{
+  // Mismos parámetros que la versión React (ver tabla de props de DriftWall)
+  const O={gap:14,tilt:16,turn:-14,roll:0,depth:120,speed:34,variance:.45,parallax:.6};
+  let root=null,plane=null,tracks=[],meta=[],offsets=[],vels=[],base=[];
+  let raf=null,lastTs=null,hoveredCol=-1,activeEl=null,lastType='mouse';
+  let pointer={x:0,y:0},damped={x:0,y:0},items=[],sig='',ro=null;
+  const mqReduce=window.matchMedia('(prefers-reduced-motion: reduce)');
+  const colFactor=(i,v)=>1+v*((((i*0.6180339887+0.35)%1)*2)-1);
+
+  // Columnas y tamaño de ficha según el ancho del muro (no el de la ventana)
+  function layout(){
+    const w=root.clientWidth||360,h=root.clientHeight||480;
+    const cols=w<380?3:w<600?4:w<900?5:6;
+    const tileW=Math.round(Math.min(210,(w*1.05)/cols-O.gap));
+    return {cols,tileW,tileH:Math.round(tileW*4/3),w,h};
+  }
+
+  function isVisible(){
+    if(!root||!root.isConnected||document.hidden||root.offsetParent===null)return false;
+    const pg=document.getElementById('page-armario');
+    return !!pg&&pg.classList.contains('active');
+  }
+
+  function release(){
+    if(activeEl)activeEl.classList.remove('is-active');
+    activeEl=null;hoveredCol=-1;
+  }
+  function activate(el){
+    if(el===activeEl)return;
+    release();
+    activeEl=el;el.classList.add('is-active');hoveredCol=Number(el.dataset.col);
+  }
+
+  function build(){
+    const L=layout();
+    const withPhoto=items.filter(it=>it.src);
+    const newSig=withPhoto.map(it=>it.id).join('|')+`#${L.cols}x${L.tileW}x${Math.round(L.h/40)}`;
+    if(newSig===sig)return;
+    sig=newSig;release();
+    root.style.setProperty('--dw-w',L.tileW+'px');
+    root.style.setProperty('--dw-h',L.tileH+'px');
+    root.style.setProperty('--dw-gap',O.gap+'px');
+    root.innerHTML='';tracks=[];meta=[];plane=null;
+    if(!withPhoto.length){
+      root.innerHTML=`<div class="aw-empty">Las fotos de tus prendas aparecen acá.<br>Tocá <b>+</b> para agregar.</div>`;
+      return;
+    }
+    // Reparto en columnas: con pocas fotos cada columna usa la lista completa
+    // rotada, así no quedan columnas vacías ni la misma foto en paralelo.
+    const n=withPhoto.length,cols=[];
+    for(let c=0;c<L.cols;c++){
+      cols.push(n>=L.cols*2
+        ? withPhoto.filter((_,i)=>i%L.cols===c)
+        : withPhoto.slice(c%n).concat(withPhoto.slice(0,c%n)));
+    }
+    const unit=L.tileH+O.gap;
+    plane=document.createElement('div');plane.className='dw-plane';
+    cols.forEach((col,c)=>{
+      const copyH=Math.max(unit,col.length*unit);
+      const copies=Math.max(2,Math.ceil((L.h*1.6)/copyH)+1);
+      meta[c]={copyH};
+      const colEl=document.createElement('div');colEl.className='dw-col';
+      const track=document.createElement('div');track.className='dw-track';
+      const frag=document.createDocumentFragment();
+      for(let k=0;k<copies;k++){
+        col.forEach(it=>{
+          const tile=document.createElement('div');
+          tile.className='dw-tile';tile.dataset.col=c;tile.tabIndex=k===0?0:-1;
+          tile.setAttribute('role','button');tile.setAttribute('aria-label',it.name||'Prenda');
+          if(k>0)tile.setAttribute('aria-hidden','true');
+          const inner=document.createElement('span');inner.className='dw-inner';
+          const img=document.createElement('img');
+          img.src=it.src;img.alt='';img.decoding='async';img.loading='lazy';img.draggable=false;
+          img.onerror=()=>{inner.style.visibility='hidden';};
+          const ov=document.createElement('span');ov.className='dw-ov';
+          const cap=document.createElement('span');cap.className='dw-cap';cap.textContent=it.name||'';
+          inner.append(img,ov,cap);tile.append(inner);frag.append(tile);
+        });
+      }
+      track.append(frag);colEl.append(track);plane.append(colEl);tracks[c]=track;
+    });
+    root.append(plane);
+    // Velocidad por columna: alternan sentido y varían un poco entre sí
+    base=cols.map((_,c)=>O.speed*colFactor(c,O.variance)*(c%2===0?1:-1));
+    offsets=meta.map((m,c)=>m.copyH*((c*0.37)%1));
+    vels=cols.map(()=>0);
+    paint(0);
+  }
+
+  function paint(dt){
+    if(!plane)return;
+    const reduced=mqReduce.matches;
+    const maxT=reduced?0:O.parallax*8,damp=dt?1-Math.exp(-dt/.12):1;
+    damped.x+=(pointer.x*maxT-damped.x)*damp;
+    damped.y+=(-pointer.y*maxT-damped.y)*damp;
+    plane.style.transform=`translate(-50%,-50%) scale(1.18) rotateX(${O.tilt+damped.y}deg) `+
+      `rotateY(${O.turn+damped.x}deg) rotateZ(${O.roll}deg) translateZ(${-O.depth}px)`;
+    for(let c=0;c<tracks.length;c++){
+      const m=meta[c];if(!m)continue;
+      if(!reduced&&dt){
+        const target=hoveredCol===c?0:base[c];
+        const ease=1-Math.exp(-dt/(target===0?.16:.28));
+        vels[c]+=(target-vels[c])*ease;
+        offsets[c]=(((offsets[c]+vels[c]*dt)%m.copyH)+m.copyH)%m.copyH;
+      }
+      tracks[c].style.transform=`translate3d(0,${-offsets[c]}px,0)`;
+    }
+  }
+
+  function frame(ts){
+    raf=null;
+    if(!isVisible()){lastTs=null;return;}            // se apaga solo
+    if(lastTs===null)lastTs=ts;
+    const dt=Math.min(.05,Math.max(0,ts-lastTs)/1000);lastTs=ts;
+    paint(dt);
+    if(!mqReduce.matches)raf=requestAnimationFrame(frame);
+  }
+
+  function start(){
+    if(!root||raf||!isVisible())return;
+    build();lastTs=null;raf=requestAnimationFrame(frame);
+  }
+
+  function relayout(){if(!root)return;build();start();}
+
+  function init(){
+    root=document.getElementById('awWall');if(!root)return;
+    root.addEventListener('pointerdown',e=>{lastType=e.pointerType;});
+    root.addEventListener('pointermove',e=>{
+      if(e.pointerType!=='mouse')return;
+      const r=root.getBoundingClientRect();
+      pointer={x:(e.clientX-r.left)/r.width-.5,y:(e.clientY-r.top)/r.height-.5};
+      const hit=document.elementFromPoint(e.clientX,e.clientY);
+      const tile=hit&&hit.closest?hit.closest('.dw-tile'):null;
+      if(tile&&root.contains(tile))activate(tile);
+    });
+    root.addEventListener('pointerleave',e=>{
+      if(e.pointerType!=='mouse')return;
+      pointer={x:0,y:0};release();
+    });
+    root.addEventListener('click',e=>{
+      if(lastType==='mouse')return;                  // el mouse ya usa hover
+      const tile=e.target.closest('.dw-tile');
+      if(!tile||tile===activeEl){release();return;}
+      activate(tile);
+    });
+    root.addEventListener('focusin',e=>{const t=e.target.closest('.dw-tile');if(t)activate(t);});
+    root.addEventListener('focusout',release);
+    ro=new ResizeObserver(()=>{if(isVisible())relayout();});
+    ro.observe(root);
+    document.addEventListener('visibilitychange',()=>{if(!document.hidden)start();});
+    mqReduce.addEventListener('change',()=>{sig='';relayout();});
+  }
+
+  function render(list){
+    if(!root)init();
+    if(!root)return;
+    items=list||[];
+    if(root.offsetParent===null){sig='';return;}     // se arma cuando se vea
+    build();start();
+  }
+
+  return {render,start,relayout};
+})();
 
 
 // ── 7) LIBRERÍA: AGREGAR PRENDA (hoja de categoría → archivo) ────────
@@ -3366,8 +3662,10 @@ function awLoad(){
 // ── 11) ARRANQUE DEL MÓDULO ───────────────────────────────────────────
 function awOnEnter(){
   if(!awOutfitOptions.length&&awItems.length)awGenerate();
+  AwWall.start();
 }
 awLoad().then(()=>{
+  awApplyView();
   awRenderFilters();awRenderGrid();awRenderSaved();
 });
 
