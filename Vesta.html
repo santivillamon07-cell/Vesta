@@ -658,7 +658,7 @@ input,textarea{font-family:inherit;}
   color:var(--gym-gold-text);font-size:17px;line-height:1;cursor:pointer;transition:.15s;
   -webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px);}
 .gym-day-add:active{transform:scale(.9);background:linear-gradient(rgba(216,178,90,0.16),rgba(216,178,90,0.16)) padding-box,var(--gym-border) border-box;}
-.gym-day-empty{font-size:12.5px;color:var(--faint);font-style:italic;padding:2px 2px 6px;}
+.gym-day-empty{font-size:12.5px;color:var(--faint);font-style:italic;padding:2px 2px 6px;text-align:center;}
 /* Cuerpo colapsable: truco de grid-template-rows 1fr↔0fr para animar la altura
    sin medirla en JS (transición suave y fluida, tanto para abrir como cerrar). */
 .gym-day-body{display:grid;grid-template-rows:1fr;transition:grid-template-rows .3s cubic-bezier(.4,0,.2,1);}
@@ -956,9 +956,9 @@ body.theme-light .reg-field-group{
        .04 → apenas un susurro (se intuye, no se ve)
        .09 → se lee el dibujo y se nota el giro   ← valor actual
        .16 → protagonista, compite con el contenido */
-  --mech-op:.09;
-  --mech-op-work:.17;   /* cuando la app está guardando o generando */
-  --mech-op-alert:.22;  /* cuando una alarma está sonando */
+  --mech-op:.16;
+  --mech-op-work:.26;   /* cuando la app está guardando o generando */
+  --mech-op-alert:.34;  /* cuando una alarma está sonando */
 }
 
 /* ── Iconos SVG (reemplazan a todos los emojis de la interfaz) ──────
@@ -1226,17 +1226,19 @@ body.mech-alert .gear,body.mech-alert .mech-arm{
   to{transform:translate3d(8%,-6%,0) scale(1.14);}
 }
 
-/* Pavesas: seis, no sesenta. Suben, se apagan y vuelven a empezar. */
+/* Pavesas: dieciocho. Suben, se apagan y vuelven a empezar. Brillan con
+   box-shadow (no con filtros extra) para que sigan siendo baratas. */
 .mote{
-  position:absolute;bottom:-12px;width:3px;height:3px;border-radius:50%;
-  background:rgba(240,196,110,0.75);filter:blur(1px);opacity:0;
+  position:absolute;bottom:-12px;width:var(--mote-s,3px);height:var(--mote-s,3px);border-radius:50%;
+  background:rgba(255,214,140,0.95);filter:blur(.6px);opacity:0;
+  box-shadow:0 0 6px 1px rgba(232,184,74,0.55);
   animation:moteRise var(--mote-dur,20s) linear infinite;
   animation-delay:var(--mote-delay,0s);
 }
 @keyframes moteRise{
   0%{opacity:0;transform:translate3d(0,0,0) scale(.7);}
-  12%{opacity:.5;}
-  70%{opacity:.32;}
+  12%{opacity:var(--mote-op,.8);}
+  70%{opacity:calc(var(--mote-op,.8) * .6);}
   100%{opacity:0;transform:translate3d(var(--mote-x,14px),-92vh,0) scale(1.15);}
 }
 .m1{left:12%;--mote-dur:21s;--mote-delay:0s;--mote-x:18px;}
@@ -1245,6 +1247,18 @@ body.mech-alert .gear,body.mech-alert .mech-arm{
 .m4{left:63%;--mote-dur:30s;--mote-delay:3s;--mote-x:-14px;}
 .m5{left:79%;--mote-dur:23s;--mote-delay:16s;--mote-x:20px;}
 .m6{left:91%;--mote-dur:28s;--mote-delay:8s;--mote-x:-10px;}
+.m7{left:6%;--mote-dur:19s;--mote-delay:9s;--mote-x:10px;--mote-s:2px;}
+.m8{left:20%;--mote-dur:25s;--mote-delay:14s;--mote-x:-16px;--mote-s:4px;--mote-op:.65;}
+.m9{left:36%;--mote-dur:22s;--mote-delay:2s;--mote-x:20px;--mote-s:2px;}
+.m10{left:42%;--mote-dur:29s;--mote-delay:18s;--mote-x:-8px;}
+.m11{left:55%;--mote-dur:20s;--mote-delay:7s;--mote-x:16px;--mote-s:4px;--mote-op:.65;}
+.m12{left:70%;--mote-dur:26s;--mote-delay:12s;--mote-x:-20px;--mote-s:2px;}
+.m13{left:84%;--mote-dur:21s;--mote-delay:1s;--mote-x:12px;}
+.m14{left:96%;--mote-dur:24s;--mote-delay:15s;--mote-x:-18px;--mote-s:2px;}
+.m15{left:16%;--mote-dur:31s;--mote-delay:20s;--mote-x:14px;--mote-s:4px;--mote-op:.6;}
+.m16{left:51%;--mote-dur:18s;--mote-delay:10s;--mote-x:-12px;--mote-s:2px;}
+.m17{left:74%;--mote-dur:28s;--mote-delay:4s;--mote-x:18px;}
+.m18{left:33%;--mote-dur:23s;--mote-delay:17s;--mote-x:-14px;--mote-s:2px;}
 
 /* ── 31 ── Salida de lo que se elimina ──────────────────────────────
    Antes, borrar algo lo hacía desaparecer de un cuadro al otro: la lista
@@ -1564,6 +1578,50 @@ img,svg,video{max-width:100%;}
 }
 
 /* ══════════════════════════════════════════════════════════════════
+ //  PRESUPUESTO — Selector de monto (ruedas de dígitos + regla)
+ //  JS en "const MoneyPicker". Las marcas crecen con scaleY, no con
+ //  height, para respetar la regla 2 de la casa.
+   ══════════════════════════════════════════════════════════════════ */
+.mp{display:flex;flex-direction:column;align-items:center;gap:14px;margin:6px 0 4px;width:100%;}
+.mp-num{border:none;background:none;padding:0;cursor:text;color:var(--ink);
+  display:inline-flex;align-items:center;justify-content:center;max-width:100%;
+  font-family:var(--mono-font);font-variant-numeric:tabular-nums;
+  font-size:clamp(30px,10vw,42px);font-weight:600;letter-spacing:-.02em;}
+.mp-num:active{transform:none;opacity:1;}
+.mp-num:focus-visible{outline:2px solid var(--brass);outline-offset:6px;border-radius:8px;}
+.mp-cur{color:var(--amber);margin-right:.1em;}
+.mp-digits{display:inline-flex;align-items:center;}
+.mc-d{position:relative;display:inline-block;width:1ch;height:1.5em;line-height:1.5em;overflow:hidden;
+  -webkit-mask-image:linear-gradient(to bottom,transparent 0%,rgba(0,0,0,.5) 11%,#000 22%,#000 78%,rgba(0,0,0,.5) 89%,transparent 100%);
+  mask-image:linear-gradient(to bottom,transparent 0%,rgba(0,0,0,.5) 11%,#000 22%,#000 78%,rgba(0,0,0,.5) 89%,transparent 100%);}
+.mc-s{position:absolute;left:0;right:0;top:0;will-change:transform;}
+.mc-s span{display:block;height:1.5em;text-align:center;}
+.mc-m{display:inline-block;width:.35ch;}
+.mc-in{animation:mcIn var(--dur-2) var(--ease-glide) both;}
+@keyframes mcIn{from{opacity:0;}to{opacity:1;}}
+.mp-type{display:none;font-size:clamp(22px,7vw,28px);}
+.mp.typing .mp-num{display:none;}
+.mp.typing .mp-type{display:block;}
+.mp-row{display:flex;align-items:center;gap:10px;width:100%;}
+.mp-step{flex:0 0 auto;width:38px;height:38px;border-radius:50%;border:1px solid var(--line-strong);
+  background:rgba(40,27,10,0.6);color:var(--amber);font-size:20px;line-height:1;cursor:pointer;
+  display:flex;align-items:center;justify-content:center;touch-action:manipulation;user-select:none;}
+.mp-ruler{position:relative;flex:1;min-width:0;height:34px;border-radius:10px;}
+.mp-ruler:has(.mp-range:focus-visible){outline:2px solid var(--brass);outline-offset:4px;}
+.mp-ticks{display:flex;align-items:flex-end;justify-content:space-between;height:100%;}
+.mp-t{width:2px;height:28px;border-radius:2px;background:rgba(200,150,60,0.28);
+  transform:scaleY(.45);transform-origin:50% 100%;
+  transition:transform var(--dur-2) var(--ease-glide),background-color var(--dur-2) ease;}
+.mp-t.on{transform:scaleY(.68);background:rgba(232,184,74,0.75);}
+.mp-t.mark{width:3px;transform:scaleY(1);background:var(--amber);box-shadow:0 0 8px rgba(232,184,74,0.6);}
+.mp-range{position:absolute;inset:0;width:100%;height:100%;margin:0;opacity:0;cursor:grab;
+  -webkit-appearance:none;appearance:none;background:transparent;touch-action:none;}
+.mp-range:active{cursor:grabbing;}
+@media (prefers-reduced-motion:reduce){
+  .mp-t,.mc-in{transition:none !important;animation:none !important;}
+}
+
+/* ══════════════════════════════════════════════════════════════════
  //  ARMARIO — Muro derivante (port en JS nativo de DriftWall)
  //  Las columnas se deslizan en un plano inclinado en 3D. Al pasar el
  //  mouse (o tocar) una prenda, su columna frena y la foto se levanta.
@@ -1590,7 +1648,8 @@ img,svg,video{max-width:100%;}
     linear-gradient(to top,#000 var(--dw-edge),transparent 100%);
   mask-composite:intersect;
 }
-.aw-wall .aw-empty{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;}
+.aw-wall .aw-empty{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;text-align:center;}
+.aw-wall .aw-empty p{margin:0;max-width:40ch;}
 .dw-plane{position:absolute;top:50%;left:50%;display:flex;transform-style:preserve-3d;
   transform-origin:50% 50%;will-change:transform;cursor:pointer;}
 .dw-col{position:relative;width:calc(var(--dw-w) + var(--dw-gap));transform-style:preserve-3d;}
@@ -1672,9 +1731,13 @@ img,svg,video{max-width:100%;}
     </svg>
   </span>
 
-  <!-- Pavesas: seis, no sesenta. -->
+  <!-- Pavesas: dieciocho, con tamaños y brillos distintos. -->
   <span class="mote m1"></span><span class="mote m2"></span><span class="mote m3"></span>
   <span class="mote m4"></span><span class="mote m5"></span><span class="mote m6"></span>
+  <span class="mote m7"></span><span class="mote m8"></span><span class="mote m9"></span>
+  <span class="mote m10"></span><span class="mote m11"></span><span class="mote m12"></span>
+  <span class="mote m13"></span><span class="mote m14"></span><span class="mote m15"></span>
+  <span class="mote m16"></span><span class="mote m17"></span><span class="mote m18"></span>
 </div>
 <div class="app">
 
@@ -1781,8 +1844,9 @@ img,svg,video{max-width:100%;}
   <div class="mini-modal-overlay" id="budgetModalOverlay" onclick="if(event.target===this)closeBudgetModal()">
     <div class="mini-modal">
       <div class="mini-modal-title">SUELDO BRUTO</div>
-      <input type="number" class="mini-input" id="budgetInput" placeholder="0" min="0" step="500" inputmode="decimal">
-      <div class="mini-hint">Ingresá tu sueldo bruto mensual</div>
+      <input type="hidden" id="budgetInput">
+      <div id="budgetPicker"></div>
+      <div class="mini-hint">Deslizá sobre la regla o tocá el monto para escribirlo</div>
       <div class="mini-btns">
         <button class="mini-cancel" onclick="closeBudgetModal()">Cancelar</button>
         <button class="mini-ok" onclick="saveBudgetModal()">GUARDAR</button>
@@ -1795,7 +1859,8 @@ img,svg,video{max-width:100%;}
     <div class="mini-modal" style="max-width:340px;">
       <div class="mini-modal-title">NUEVO GASTO</div>
       <input type="text" class="mini-input" id="expenseName" placeholder="Nombre del gasto" style="font-size:clamp(14px,4vw,16px);text-align:left;padding:10px 14px;margin-bottom:8px;">
-      <input type="number" class="mini-input" id="expenseAmount" placeholder="Monto" min="0" step="100" inputmode="decimal" style="font-size:clamp(20px,6vw,26px);margin-bottom:10px;">
+      <input type="hidden" id="expenseAmount">
+      <div id="expensePicker"></div>
       <div style="margin-bottom:14px;">
         <div style="font-size:clamp(9px,2.5vw,10px);font-weight:700;letter-spacing:2px;color:rgba(160,120,60,0.5);text-transform:uppercase;margin-bottom:8px;text-align:center;">Color en el gráfico</div>
         <div id="colorPicker" style="display:grid;grid-template-columns:repeat(8,1fr);gap:8px;justify-items:center;width:100%;"></div>
@@ -2854,13 +2919,174 @@ function renderExpenses(){
     </div>`;
   }).join('');
 }
+// ── Selector de monto (port en JS nativo de rare-ui/animated-counter) ─
+// Reemplaza los <input type="number"> de sueldo y gasto. El número se
+// arma con "ruedas" de dígitos 0-9 que giran hasta la cifra nueva (hacia
+// arriba si el monto sube, hacia abajo si baja), y debajo hay una regla
+// de 41 marcas con un slider invisible encima para elegir el monto.
+// La regla es cuadrática: la primera mitad cubre montos chicos con
+// precisión y la segunda llega rápido a los grandes. Los botones − / +
+// ajustan fino (mantenelos apretados para repetir) y tocar la cifra
+// permite escribirla exacta. El valor se escribe en el input oculto
+// (budgetInput / expenseAmount), así que saveBudgetModal y saveExpense
+// no cambiaron. Todo en colones (₡), agrupado igual que fmtMoney.
+const MoneyPicker=(()=>{
+  const TICKS=41,RES=1000,DUR=520;
+  const mqReduce=window.matchMedia('(prefers-reduced-motion: reduce)');
+  const mod=(n,m)=>((n%m)+m)%m;
+  const pickers={};
+  const wheels=new Set();let raf=null;
+
+  // Paso fino según el tamaño del monto
+  const stepFor=v=>v<20000?500:v<200000?1000:v<1000000?5000:10000;
+  const roundTo=(v,s)=>Math.max(0,Math.round(v/s)*s);
+  const easeOut=t=>{const c1=1.1,c3=c1+1;return 1+c3*Math.pow(t-1,3)+c1*Math.pow(t-1,2);};
+
+  function loop(now){
+    let busy=false;
+    wheels.forEach(w=>{
+      const t=Math.min(1,(now-w.t0)/DUR);
+      w.pos=w.from+(w.goal-w.from)*easeOut(t);
+      if(t>=1){w.pos=w.goal;wheels.delete(w);}else busy=true;
+      w.stack.style.transform=`translate3d(0,${-mod(w.pos,10)*1.5}em,0)`;
+    });
+    raf=busy?requestAnimationFrame(loop):null;
+  }
+  function aim(w,digit,dir){
+    if(mod(w.goal,10)===digit)return;          // ya va (o está) en esa cifra
+    if(mqReduce.matches){w.pos=w.goal=digit;w.stack.style.transform=`translate3d(0,${-digit*1.5}em,0)`;return;}
+    w.from=w.pos;w.t0=performance.now();
+    w.goal=dir<0?w.pos-mod(w.pos-digit,10):w.pos+mod(digit-w.pos,10);
+    wheels.add(w);if(!raf)raf=requestAnimationFrame(loop);
+  }
+
+  function makeWheel(start){
+    const el=document.createElement('span');el.className='mc-d';
+    const stack=document.createElement('span');stack.className='mc-s';
+    stack.innerHTML='0123456789'.split('').concat('0').map(f=>`<span>${f}</span>`).join('');
+    el.append(stack);
+    const w={el,stack,pos:start,goal:start,from:start,t0:0};
+    stack.style.transform=`translate3d(0,${-start*1.5}em,0)`;
+    return w;
+  }
+
+  // Cifras agrupadas de a tres con espacio duro, igual que fmtMoney (es-CR)
+  const group=v=>String(Math.round(v)).replace(/\B(?=(\d{3})+(?!\d))/g,'\u00A0');
+
+  function paintNumber(p,dir){
+    const chars=group(p.value);
+    const digits=chars.replace(/\D/g,'').length;
+    const nodes=[];let seen=0;const keep=new Set();
+    for(const ch of chars){
+      if(ch>='0'&&ch<='9'){
+        const key=digits-seen++;           // lugar contado desde la derecha
+        let w=p.wheels.get(key);
+        if(!w){w=makeWheel(0);w.el.classList.add('mc-in');p.wheels.set(key,w);}
+        keep.add(key);nodes.push(w.el);aim(w,Number(ch),dir);
+      }else{
+        const m=document.createElement('span');m.className='mc-m';m.textContent=ch;nodes.push(m);
+      }
+    }
+    p.wheels.forEach((w,k)=>{if(!keep.has(k)){wheels.delete(w);p.wheels.delete(k);}});
+    p.digits.replaceChildren(...nodes);
+    p.num.setAttribute('aria-label','₡'+chars.replace(/\u00A0/g,' ')+'. Tocá para escribir el monto');
+  }
+
+  function paintRuler(p){
+    const r=Math.sqrt(Math.min(1,p.value/p.max));
+    const mark=Math.round(r*(TICKS-1));
+    if(mark!==p.mark){
+      p.mark=mark;
+      p.ticks.forEach((t,i)=>{t.className='mp-t'+(i===mark?' mark':i<mark?' on':'');});
+    }
+    p.range.value=Math.round(r*RES);
+    p.range.setAttribute('aria-valuetext','₡'+group(p.value).replace(/\u00A0/g,' '));
+  }
+
+  function setValue(p,v,{fromRange=false}={}){
+    v=Math.max(0,Math.min(99999999,Math.round(Number(v)||0)));
+    while(v>p.max)p.max*=2;                 // el + o la escritura pueden pasar el tope
+    const dir=v>=p.value?1:-1;
+    p.value=v;p.hidden.value=String(v);
+    paintNumber(p,dir);
+    if(!fromRange)paintRuler(p);else{
+      const mark=Math.round(Math.sqrt(Math.min(1,v/p.max))*(TICKS-1));
+      if(mark!==p.mark){p.mark=mark;p.ticks.forEach((t,i)=>{t.className='mp-t'+(i===mark?' mark':i<mark?' on':'');});}
+    }
+  }
+
+  function repeatBtn(btn,fn){
+    let t1=null,t2=null;
+    const stop=()=>{clearTimeout(t1);clearInterval(t2);t1=t2=null;};
+    btn.addEventListener('pointerdown',e=>{
+      e.preventDefault();fn();
+      t1=setTimeout(()=>{t2=setInterval(fn,70);},380);
+    });
+    ['pointerup','pointerleave','pointercancel'].forEach(ev=>btn.addEventListener(ev,stop));
+    btn.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();fn();}});
+  }
+
+  function init(hostId,hiddenId,max){
+    const host=document.getElementById(hostId),hidden=document.getElementById(hiddenId);
+    if(!host||!hidden)return;
+    host.classList.add('mp');
+    host.innerHTML=`
+      <button type="button" class="mp-num"><span class="mp-cur">₡</span><span class="mp-digits"></span></button>
+      <input class="mp-type mini-input" type="number" min="0" step="1" inputmode="numeric" aria-label="Escribir monto en colones">
+      <div class="mp-row">
+        <button type="button" class="mp-step" aria-label="Restar">−</button>
+        <div class="mp-ruler">
+          <div class="mp-ticks" aria-hidden="true">${'<span class="mp-t"></span>'.repeat(TICKS)}</div>
+          <input class="mp-range" type="range" min="0" max="${RES}" step="1" aria-label="Monto en colones">
+        </div>
+        <button type="button" class="mp-step" aria-label="Sumar">+</button>
+      </div>`;
+    const p={host,hidden,max,baseMax:max,value:0,mark:-1,wheels:new Map(),
+      num:host.querySelector('.mp-num'),digits:host.querySelector('.mp-digits'),
+      type:host.querySelector('.mp-type'),range:host.querySelector('.mp-range'),
+      ticks:[...host.querySelectorAll('.mp-t')]};
+    const [minus,plus]=host.querySelectorAll('.mp-step');
+    p.range.addEventListener('input',()=>{
+      const r=p.range.valueAsNumber/RES,raw=p.max*r*r;
+      setValue(p,roundTo(raw,stepFor(raw)),{fromRange:true});
+      if(navigator.vibrate&&p.mark!==p.lastBuzz){p.lastBuzz=p.mark;try{navigator.vibrate(4);}catch(e){}}
+    });
+    repeatBtn(minus,()=>{const s=stepFor(Math.max(0,p.value-1));setValue(p,roundTo(p.value-s,s));});
+    repeatBtn(plus,()=>{const s=stepFor(p.value);setValue(p,roundTo(p.value+s,s));});
+    // Tocar la cifra → escribirla exacta; al salir vuelve al contador
+    p.num.addEventListener('click',()=>{
+      host.classList.add('typing');p.type.value=p.value||'';p.type.focus();p.type.select();
+    });
+    const commit=()=>{if(!host.classList.contains('typing'))return;host.classList.remove('typing');setValue(p,p.type.value);};
+    p.type.addEventListener('blur',commit);
+    p.type.addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();p.type.blur();}});
+    pickers[hiddenId]=p;
+    setValue(p,0);
+  }
+
+  // Al abrir el modal: arranca en el valor guardado (o 0) y el tope vuelve al original
+  function open(hiddenId,v){
+    const p=pickers[hiddenId];if(!p)return;
+    p.host.classList.remove('typing');p.max=p.baseMax;
+    setValue(p,v||0);
+  }
+  // Para que GUARDAR tome lo que se esté escribiendo sin tener que salir del campo
+  function commitTyping(hiddenId){
+    const p=pickers[hiddenId];
+    if(p&&p.host.classList.contains('typing')){p.host.classList.remove('typing');setValue(p,p.type.value);}
+  }
+  return {init,open,commitTyping};
+})();
+MoneyPicker.init('budgetPicker','budgetInput',3000000);
+MoneyPicker.init('expensePicker','expenseAmount',500000);
+
 function openBudgetModal(){
-  document.getElementById('budgetInput').value=salary!==null?salary:'';
+  MoneyPicker.open('budgetInput',salary!==null?salary:0);
   document.getElementById('budgetModalOverlay').classList.add('open');
-  setTimeout(()=>document.getElementById('budgetInput').focus(),100);
 }
 function closeBudgetModal(){document.getElementById('budgetModalOverlay').classList.remove('open');}
 function saveBudgetModal(){
+  MoneyPicker.commitTyping('budgetInput');
   const v=parseFloat(document.getElementById('budgetInput').value);
   if(isNaN(v)||v<0){showBanner('Valor inválido',3000,'warn');return;}
   salary=v;closeBudgetModal();renderBudgetFields();saveStorage();showBanner('Sueldo guardado',3000,'ok');
@@ -2868,7 +3094,7 @@ function saveBudgetModal(){
 function openExpenseModal(){
   selectedColor=EXPENSE_COLORS[0].hex;
   document.getElementById('expenseName').value='';
-  document.getElementById('expenseAmount').value='';
+  MoneyPicker.open('expenseAmount',0);
   const cp=document.getElementById('colorPicker');
   cp.innerHTML='';
   EXPENSE_COLORS.forEach(c=>{
@@ -2888,6 +3114,7 @@ function selectExpenseColor(hex,el){
 }
 function saveExpense(){
   const name=document.getElementById('expenseName').value.trim();
+  MoneyPicker.commitTyping('expenseAmount');
   const amount=parseFloat(document.getElementById('expenseAmount').value);
   if(!name){showBanner('Ingresá un nombre',3000,'warn');return;}
   if(isNaN(amount)||amount<=0){showBanner('Monto inválido',3000,'warn');return;}
@@ -3442,7 +3669,7 @@ const AwWall=(()=>{
     root.style.setProperty('--dw-gap',O.gap+'px');
     root.innerHTML='';tracks=[];meta=[];plane=null;
     if(!withPhoto.length){
-      root.innerHTML=`<div class="aw-empty">Las fotos de tus prendas aparecen acá.<br>Tocá <b>+</b> para agregar.</div>`;
+      root.innerHTML=`<div class="aw-empty"><p>Las fotos de tus prendas aparecen acá.<br>Tocá <b>+</b> para agregar.</p></div>`;
       return;
     }
     // Reparto en columnas: con pocas fotos cada columna usa la lista completa
@@ -3713,12 +3940,17 @@ function gymLoadCollapsedDays(){
 function gymSaveCollapsedDays(){
   try{localStorage.setItem('bat_gym_collapsed',JSON.stringify([...gymCollapsedDays]));}catch(e){}
 }
+// Solo alterna la clase del grupo: antes redibujaba la rutina entera
+// (todas las filas de los 7 días) por cada toque en una cabecera.
 function gymToggleDayCollapse(dayKey){
   const key=dayKey==='none'?'none':Number(dayKey);
-  if(gymCollapsedDays.has(key))gymCollapsedDays.delete(key);
-  else gymCollapsedDays.add(key);
+  const collapsed=!gymCollapsedDays.has(key);
+  if(collapsed)gymCollapsedDays.add(key);else gymCollapsedDays.delete(key);
   gymSaveCollapsedDays();
-  renderGymRoutine();
+  const g=document.querySelector('.gym-day-group[data-day="'+key+'"]');
+  if(!g){renderGymRoutine();return;}
+  g.classList.toggle('collapsed',collapsed);
+  const h=g.querySelector('.gym-day-header');if(h)h.setAttribute('aria-expanded',String(!collapsed));
 }
 
 
@@ -3734,6 +3966,9 @@ function gymSwitchSub(sub){
 
 
 // ── 5) RUTINA: ejercicios diarios agrupados por día ──────────────────
+// Plantillas que se repiten en cada fila: se arman una sola vez.
+let GYM_TRASH='';
+const gymTrash=()=>GYM_TRASH||(GYM_TRASH=ICON.trash(18));
 function gymRoutineRowHTML(ex){
   const dayOptions=DAY_ORDER.map((d,i)=>
     `<option value="${d}"${ex.day===d?' selected':''}>${GYM_DAY_ABBR[i]}</option>`).join('');
@@ -3744,7 +3979,7 @@ function gymRoutineRowHTML(ex){
       <select class="gym-ex-day-select" onchange="gymSetExDay('${ex.id}',this.value)" aria-label="Día asignado">
         ${dayOptions}
       </select>
-      <button class="gym-ex-del" onclick="gymDeleteExercise('${ex.id}')" aria-label="Eliminar ejercicio">${ICON.trash(18)}</button>
+      <button class="gym-ex-del" onclick="gymDeleteExercise('${ex.id}')" aria-label="Eliminar ejercicio">${gymTrash()}</button>
     </div>
     <div class="gym-ex-fields">
       <div class="gym-stepper">
@@ -3802,36 +4037,55 @@ function renderGymRoutine(){
   if(!list)return;
   if(gymRoutine.length===0){list.innerHTML='';if(empty)empty.style.display='block';return;}
   if(empty)empty.style.display='none';
+  // Una sola pasada para repartir por día (antes: 8 filtros sobre la lista)
+  const byDay=gymBucket();
   let html='';
-  DAY_ORDER.forEach((d,i)=>{
-    const items=gymRoutine.filter(e=>e.day===d);
-    html+=gymDayGroupHTML(d, DAY_NAME[i], items);
-  });
+  DAY_ORDER.forEach((d,i)=>{html+=gymDayGroupHTML(d, DAY_NAME[i], byDay.get(d));});
   // Ejercicios guardados antes de esta función (sin campo "day") o con día inválido:
   // se muestran aparte para que el usuario los reasigne con el selector de día.
-  const unassigned=gymRoutine.filter(e=>!DAY_ORDER.includes(e.day));
+  const unassigned=byDay.get('none');
   if(unassigned.length)html+=gymDayGroupHTML(null,'Sin día asignado',unassigned);
   list.innerHTML=html;
+}
+function gymBucket(){
+  const m=new Map(DAY_ORDER.map(d=>[d,[]]));m.set('none',[]);
+  for(const e of gymRoutine)(m.get(e.day)||m.get('none')).push(e);
+  return m;
+}
+// Redibuja SOLO los días indicados (reemplaza su grupo). Si la lista estaba
+// vacía o el cambio toca el grupo "Sin día asignado", cae al render completo.
+function gymRefreshDays(...days){
+  const list=document.getElementById('gymRoutineList');
+  const empty=document.getElementById('gymRoutineEmpty');
+  if(!list||!gymRoutine.length||!list.children.length||days.some(d=>!DAY_ORDER.includes(d))){renderGymRoutine();return;}
+  if(empty)empty.style.display='none';
+  const byDay=gymBucket();
+  new Set(days).forEach(d=>{
+    const g=list.querySelector('.gym-day-group[data-day="'+d+'"]');
+    if(g)g.outerHTML=gymDayGroupHTML(d,DAY_NAME[DAY_ORDER.indexOf(d)],byDay.get(d));
+  });
 }
 function gymAddExercise(day){
   const d=(day===undefined||day===null||isNaN(day))?gymDefaultDay():Number(day);
   const ex={id:gymId(),name:'',sets:3,reps:10,day:d};
   gymRoutine.push(ex);
-  renderGymRoutine();gymPersist();
+  if(gymCollapsedDays.delete(d))gymSaveCollapsedDays();   // si el día estaba cerrado, se abre
+  gymRefreshDays(d);gymPersist('routine');
   const row=document.querySelector('.gym-ex-row[data-id="'+ex.id+'"]');
   if(row){const inp=row.querySelector('.gym-ex-name');if(inp)inp.focus();}
 }
 function gymSetExDay(id,val){
   const ex=gymRoutine.find(e=>e.id===id);if(!ex)return;
+  const prev=ex.day;
   ex.day=parseInt(val,10);
-  renderGymRoutine();gymPersist();
+  gymRefreshDays(prev,ex.day);gymPersist('routine');
   showBanner('Movido a '+gymDayFullName(ex.day),3000,'event');
 }
 function gymSetEx(id,field,val){
   const ex=gymRoutine.find(e=>e.id===id);if(!ex)return;
   if(field==='name'){ex.name=val;}
   else{let n=parseInt(val,10);if(isNaN(n))n=0;if(n<0)n=0;ex[field]=n;}
-  gymPersist(); // sin re-render para no perder el foco mientras se escribe
+  gymPersist('routine'); // sin re-render para no perder el foco mientras se escribe
 }
 function gymStepEx(id,field,delta){
   const ex=gymRoutine.find(e=>e.id===id);if(!ex)return;
@@ -3841,12 +4095,13 @@ function gymStepEx(id,field,delta){
   ex[field]=n;
   const row=document.querySelector('.gym-ex-row[data-id="'+id+'"]');
   if(row){const inp=row.querySelector('.gym-step-val[data-field="'+field+'"]');if(inp)inp.value=n;}
-  gymPersist();
+  gymPersist('routine');
 }
 function gymDeleteExercise(id){
-  const i=gymRoutine.findIndex(e=>e.id===id);
-  if(i>-1)gymRoutine.splice(i,1);
-  renderGymRoutine();gymPersist();showBanner('Ejercicio eliminado',3000,'danger');
+  const i=gymRoutine.findIndex(e=>e.id===id);if(i<0)return;
+  const day=gymRoutine[i].day;
+  gymRoutine.splice(i,1);
+  gymRefreshDays(day);gymPersist('routine');showBanner('Ejercicio eliminado',3000,'danger');
 }
 
 
@@ -3857,7 +4112,7 @@ function gymLoadRowHTML(l){
     <div class="gym-load-top">
       <input class="gym-load-name" type="text" placeholder="Ejercicio (ej. Prensa, Jalones)"
             value="${gymEsc(l.name)}" maxlength="60" oninput="gymSetLoad('${l.id}','name',this.value)">
-      <button class="gym-load-del" onclick="gymDeleteLoad('${l.id}')" aria-label="Eliminar registro">${ICON.trash(18)}</button>
+      <button class="gym-load-del" onclick="gymDeleteLoad('${l.id}')" aria-label="Eliminar registro">${gymTrash()}</button>
     </div>
     <div class="gym-load-fields">
       <span class="gym-load-stat-kicker">PR Actual</span>
@@ -3899,7 +4154,7 @@ function renderGymLoads(){
 function gymAddLoad(){
   const l={id:gymId(),name:'',weight:'',unit:'kg',date:gymTodayISO()};
   gymLoads.push(l);
-  renderGymLoads();gymPersist();
+  renderGymLoads();gymPersist('loads');
   // Se busca por id (no por "última fila del DOM"): como la lista ahora se
   // ordena alfabéticamente, el registro nuevo no siempre cae al final.
   const row=document.querySelector('.gym-load-row[data-id="'+l.id+'"]');
@@ -3915,11 +4170,11 @@ function gymSetLoad(id,field,val){
       l.weight=0;
       const row=document.querySelector('.gym-load-row[data-id="'+id+'"]');
       if(row){const wi=row.querySelector('.gym-load-w');if(wi)wi.value=0;}
-      gymPersist();return;
+      gymPersist('loads');return;
     }
   }
   l[field]=val; // fecha en ISO y nombre tal cual; el peso ya quedó validado arriba
-  gymPersist();
+  gymPersist('loads');
 }
 function gymSetUnit(id,unit){
   const l=gymLoads.find(x=>x.id===id);if(!l)return;
@@ -3931,28 +4186,47 @@ function gymSetUnit(id,unit){
   const num=parseFloat(l.weight);
   if(!isNaN(num))l.weight=Math.round((unit==='lbs'?num*KG_TO_LBS:num/KG_TO_LBS)*10)/10;
   l.unit=unit;
-  renderGymLoads(); // hace falta redibujar: cambió el número, no solo qué botón está activo
-  gymPersist();
+  // Se redibuja solo esta fila (cambió el número y el botón activo), no la lista entera
+  const row=document.querySelector('.gym-load-row[data-id="'+id+'"]');
+  if(row)row.outerHTML=gymLoadRowHTML(l);else renderGymLoads();
+  gymPersist('loads');
 }
 function gymStampToday(id){
   const l=gymLoads.find(x=>x.id===id);if(!l)return;
   l.date=gymTodayISO();
   const row=document.querySelector('.gym-load-row[data-id="'+id+'"]');
   if(row){const di=row.querySelector('.gym-load-date');if(di)di.value=l.date;}
-  gymPersist();showBanner('Carga actualizada a hoy',3000,'ok');
+  gymPersist('loads');showBanner('Carga actualizada a hoy',3000,'ok');
 }
 function gymDeleteLoad(id){
-  const i=gymLoads.findIndex(x=>x.id===id);
-  if(i>-1)gymLoads.splice(i,1);
-  renderGymLoads();gymPersist();showBanner('Registro eliminado',3000,'danger');
+  const i=gymLoads.findIndex(x=>x.id===id);if(i<0)return;
+  gymLoads.splice(i,1);
+  const row=document.querySelector('.gym-load-row[data-id="'+id+'"]');
+  if(row&&gymLoads.length)row.remove();else renderGymLoads();
+  gymPersist('loads');showBanner('Registro eliminado',3000,'danger');
 }
 
 
 // ── 7) PERSISTENCIA Y LIMPIEZA DE DUPLICADOS ─────────────────────────
-function gymPersist(){
-  idbSetList('bat_gym_routine',gymRoutine);
-  idbSetList('bat_gym_loads',gymLoads);
+// Guardado agrupado: antes cada tecla escrita en un nombre o peso guardaba
+// las DOS listas completas en IndexedDB. Ahora se marca qué lista cambió y
+// se escribe una sola vez 350 ms después de la última edición. Si la app se
+// cierra o pasa a segundo plano antes, se guarda en ese momento.
+let gymSaveTimer=null,gymDirtyRoutine=false,gymDirtyLoads=false;
+function gymPersist(which){
+  if(which!=='loads')gymDirtyRoutine=true;
+  if(which!=='routine')gymDirtyLoads=true;
+  clearTimeout(gymSaveTimer);
+  gymSaveTimer=setTimeout(gymFlush,350);
 }
+function gymFlush(){
+  clearTimeout(gymSaveTimer);gymSaveTimer=null;
+  if(gymDirtyRoutine)idbSetList('bat_gym_routine',gymRoutine);
+  if(gymDirtyLoads)idbSetList('bat_gym_loads',gymLoads);
+  gymDirtyRoutine=gymDirtyLoads=false;
+}
+window.addEventListener('pagehide',gymFlush);
+document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='hidden')gymFlush();});
 // Quita ejercicios duplicados (mismo nombre + series + reps + día) dejando solo el primero
 // de cada grupo. Esto limpia entradas repetidas que hayan quedado guardadas por error
 // (ej. dos ejercicios vacíos "3 series / 10 reps" sin día asignado). Devuelve cuántos se quitaron.
@@ -4010,9 +4284,18 @@ function gymLoadStore(){
 
 
 // ── 8) ARRANQUE DEL MÓDULO ────────────────────────────────────────────
-function gymRender(){renderGymRoutine();renderGymLoads();}
+// Se dibuja una vez al cargar; después cada acción actualiza solo lo que
+// cambió. Entrar a la pestaña ya no reconstruye las dos listas enteras,
+// salvo el orden alfabético de Cargas, que se reacomoda si un nombre cambió.
+let gymReady=false,gymLoadsOrder='';
+function gymRender(force){
+  const order=gymSortedLoads().map(l=>l.id).join('|');
+  if(!gymReady||force){renderGymRoutine();renderGymLoads();gymReady=true;}
+  else if(order!==gymLoadsOrder)renderGymLoads();
+  gymLoadsOrder=order;
+}
 gymLoadCollapsedDays();
-gymLoadStore().then(gymRender);
+gymLoadStore().then(()=>gymRender(true));
 </script>
 
 <script>
