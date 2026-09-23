@@ -269,7 +269,7 @@ input,textarea{font-family:inherit;}
 .sw-title-row{text-align:center;margin-bottom:8px;}
 .sw-label{font-size:var(--kicker);font-weight:800;letter-spacing:3px;color:var(--brass);text-transform:uppercase;}
 .sw-title{font-size:clamp(22px,6vw,28px);font-weight:600;margin-top:4px;color:var(--ink);}
-.sw-circle-wrap{position:relative;width:min(74vw,280px);height:min(74vw,280px);margin:28px auto 30px;}
+.sw-circle-wrap{position:relative;width:min(70vw,268px);height:min(70vw,268px);margin:44px auto 42px;}
 .sw-circle{position:absolute;inset:0;border-radius:50%;background:radial-gradient(circle at 50% 40%,rgba(44,30,12,0.55),rgba(14,9,3,0.78));
   -webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px);
   border:1px solid var(--line);display:flex;flex-direction:column;align-items:center;justify-content:center;
@@ -1621,23 +1621,36 @@ img,svg,video{max-width:100%;}
  //  andando: el motor "trabaja" cuando vos lo hacés. Las animaciones se
  //  pausan solas cuando la pestaña no está activa.
    ══════════════════════════════════════════════════════════════════ */
-.sw-engine{position:absolute;inset:-14%;pointer-events:none;z-index:0;}
+.sw-engine{position:absolute;inset:-22%;pointer-events:none;z-index:0;}
 .sw-core{position:absolute;left:50%;top:50%;width:26%;height:26%;border-radius:50%;transform:translate(-50%,-50%);
   background:radial-gradient(circle,rgba(255,226,165,0.85),rgba(232,184,74,0.35) 45%,transparent 72%);
   animation:swCore 3.6s ease-in-out infinite;}
-.sw-gear{position:absolute;display:block;}
-.sw-gear-svg{width:100%;height:100%;display:block;fill:none;stroke:var(--brass);stroke-width:3;
+/* El aro dentado gira alrededor de la esfera; los tres satélites se
+   apoyan en su borde. La velocidad de cada uno respeta su número de
+   dientes (36, 18, 12 y 10), como si de verdad estuvieran engranados. */
+.sw-rim{position:absolute;left:50%;top:50%;width:86%;height:86%;transform:translate(-50%,-50%);opacity:.5;}
+.sw-rim .sw-gear-svg{animation:swGear 60s linear infinite;}
+.sw-gear{position:absolute;transform:translate(-50%,-50%);}
+.sw-gear .sw-gear-svg{animation:swGear 30s linear infinite reverse;}
+.sw-gear-svg{width:100%;height:100%;display:block;fill:none;stroke:var(--brass);stroke-width:2.6;
   stroke-linejoin:round;vector-effect:non-scaling-stroke;}
-.sw-gear.g1{width:34%;height:34%;left:-5%;top:4%;opacity:.42;animation:swGear 26s linear infinite;}
-.sw-gear.g2{width:25%;height:25%;right:-3%;bottom:14%;opacity:.36;animation:swGear 18s linear infinite reverse;}
-.sw-gear.g3{width:19%;height:19%;left:12%;bottom:1%;opacity:.32;animation:swGear 13s linear infinite;}
+.sw-gear.g1{width:24%;height:24%;left:7%;top:70%;opacity:.46;}
+.sw-gear.g2{width:20%;height:20%;left:20%;top:6%;opacity:.42;}
+.sw-gear.g2 .sw-gear-svg{animation-duration:20s;}
+.sw-gear.g3{width:17%;height:17%;left:88%;top:26%;opacity:.4;}
+.sw-gear.g3 .sw-gear-svg{animation-duration:16.6s;}
 .sw-sparks{position:absolute;left:50%;top:50%;width:0;height:0;}
 .sw-spark{position:absolute;width:3px;height:3px;border-radius:50%;background:#ffe2a5;opacity:0;
   box-shadow:0 0 7px 2px rgba(240,190,90,0.75);}
 /* Con el cronómetro andando: el motor acelera, brilla y suelta chispas */
-.sw-engine.running .sw-gear.g1{animation-duration:9s;opacity:.62;}
-.sw-engine.running .sw-gear.g2{animation-duration:6s;opacity:.54;}
-.sw-engine.running .sw-gear.g3{animation-duration:4.4s;opacity:.48;}
+.sw-engine.running .sw-rim{opacity:.85;}
+.sw-engine.running .sw-rim .sw-gear-svg{animation-duration:20s;}
+.sw-engine.running .sw-gear.g1{opacity:.8;}
+.sw-engine.running .sw-gear.g1 .sw-gear-svg{animation-duration:10s;}
+.sw-engine.running .sw-gear.g2{opacity:.74;}
+.sw-engine.running .sw-gear.g2 .sw-gear-svg{animation-duration:6.7s;}
+.sw-engine.running .sw-gear.g3{opacity:.7;}
+.sw-engine.running .sw-gear.g3 .sw-gear-svg{animation-duration:5.5s;}
 .sw-engine.running .sw-core{animation-duration:1.8s;}
 .sw-engine.running .sw-spark{animation-name:swSpark;animation-timing-function:ease-out;animation-iteration-count:infinite;}
 @keyframes swCore{
@@ -1650,9 +1663,10 @@ img,svg,video{max-width:100%;}
   100%{transform:translate(calc(var(--tx) * 1px),calc(var(--ty) * 1px)) scale(.4);opacity:0;}
 }
 /* Fuera de la pestaña del cronómetro no hay nada que animar */
-#page-stopwatch:not(.active) .sw-engine :where(.sw-core,.sw-gear,.sw-spark){animation-play-state:paused;}
+#page-stopwatch{overflow-x:hidden;}
+#page-stopwatch:not(.active) .sw-engine :where(.sw-core,.sw-gear-svg,.sw-spark){animation-play-state:paused;}
 @media (prefers-reduced-motion:reduce){
-  .sw-core,.sw-gear,.sw-spark{animation:none !important;}
+  .sw-core,.sw-gear-svg,.sw-spark{animation:none !important;}
   .sw-spark{opacity:0;}
 }
 
@@ -2021,6 +2035,7 @@ img,svg,video{max-width:100%;}
       <!-- Motor: núcleo + tres engranajes + chispas (ver "SW-ENGINE") -->
       <div class="sw-engine" id="swEngine" aria-hidden="true">
         <span class="sw-core"></span>
+        <span class="sw-rim"><svg class="sw-gear-svg" viewBox="-104 -104 208 208"><path d="M-4.01 -91.91L-2.44 -99.97L2.44 -99.97L4.01 -91.91L12.01 -91.21L14.95 -98.88L19.77 -98.03L19.91 -89.82L27.66 -87.74L31.90 -94.78L36.49 -93.11L35.21 -85.00L42.48 -81.60L47.87 -87.80L52.10 -85.36L49.43 -77.59L56.01 -72.99L62.39 -78.15L66.13 -75.01L62.15 -67.83L67.83 -62.15L75.01 -66.13L78.15 -62.39L72.99 -56.01L77.59 -49.43L85.36 -52.10L87.80 -47.87L81.60 -42.48L85.00 -35.21L93.11 -36.49L94.78 -31.90L87.74 -27.66L89.82 -19.91L98.03 -19.77L98.88 -14.95L91.21 -12.01L91.91 -4.01L99.97 -2.44L99.97 2.44L91.91 4.01L91.21 12.01L98.88 14.95L98.03 19.77L89.82 19.91L87.74 27.66L94.78 31.90L93.11 36.49L85.00 35.21L81.60 42.48L87.80 47.87L85.36 52.10L77.59 49.43L72.99 56.01L78.15 62.39L75.01 66.13L67.83 62.15L62.15 67.83L66.13 75.01L62.39 78.15L56.01 72.99L49.43 77.59L52.10 85.36L47.87 87.80L42.48 81.60L35.21 85.00L36.49 93.11L31.90 94.78L27.66 87.74L19.91 89.82L19.77 98.03L14.95 98.88L12.01 91.21L4.01 91.91L2.44 99.97L-2.44 99.97L-4.01 91.91L-12.01 91.21L-14.95 98.88L-19.77 98.03L-19.91 89.82L-27.66 87.74L-31.90 94.78L-36.49 93.11L-35.21 85.00L-42.48 81.60L-47.87 87.80L-52.10 85.36L-49.43 77.59L-56.01 72.99L-62.39 78.15L-66.13 75.01L-62.15 67.83L-67.83 62.15L-75.01 66.13L-78.15 62.39L-72.99 56.01L-77.59 49.43L-85.36 52.10L-87.80 47.87L-81.60 42.48L-85.00 35.21L-93.11 36.49L-94.78 31.90L-87.74 27.66L-89.82 19.91L-98.03 19.77L-98.88 14.95L-91.21 12.01L-91.91 4.01L-99.97 2.44L-99.97 -2.44L-91.91 -4.01L-91.21 -12.01L-98.88 -14.95L-98.03 -19.77L-89.82 -19.91L-87.74 -27.66L-94.78 -31.90L-93.11 -36.49L-85.00 -35.21L-81.60 -42.48L-87.80 -47.87L-85.36 -52.10L-77.59 -49.43L-72.99 -56.01L-78.15 -62.39L-75.01 -66.13L-67.83 -62.15L-62.15 -67.83L-66.13 -75.01L-62.39 -78.15L-56.01 -72.99L-49.43 -77.59L-52.10 -85.36L-47.87 -87.80L-42.48 -81.60L-35.21 -85.00L-36.49 -93.11L-31.90 -94.78L-27.66 -87.74L-19.91 -89.82L-19.77 -98.03L-14.95 -98.88L-12.01 -91.21Z"/><circle cx="0" cy="0" r="86"/></svg></span>
         <span class="sw-gear g1"><svg class="sw-gear-svg" viewBox="-104 -104 208 208" aria-hidden="true"><path d="M-6.74 -83.73L-3.49 -99.94L3.49 -99.94L6.74 -83.73L22.31 -80.98L30.90 -95.11L37.46 -92.72L34.97 -76.38L48.66 -68.47L61.57 -78.80L66.91 -74.31L58.98 -59.81L69.14 -47.70L84.80 -52.99L88.29 -46.95L75.88 -36.03L81.29 -21.17L97.81 -20.79L99.03 -13.92L83.63 -7.91L83.63 7.91L99.03 13.92L97.81 20.79L81.29 21.17L75.88 36.03L88.29 46.95L84.80 52.99L69.14 47.70L58.98 59.81L66.91 74.31L61.57 78.80L48.66 68.47L34.97 76.38L37.46 92.72L30.90 95.11L22.31 80.98L6.74 83.73L3.49 99.94L-3.49 99.94L-6.74 83.73L-22.31 80.98L-30.90 95.11L-37.46 92.72L-34.97 76.38L-48.66 68.47L-61.57 78.80L-66.91 74.31L-58.98 59.81L-69.14 47.70L-84.80 52.99L-88.29 46.95L-75.88 36.03L-81.29 21.17L-97.81 20.79L-99.03 13.92L-83.63 7.91L-83.63 -7.91L-99.03 -13.92L-97.81 -20.79L-81.29 -21.17L-75.88 -36.03L-88.29 -46.95L-84.80 -52.99L-69.14 -47.70L-58.98 -59.81L-66.91 -74.31L-61.57 -78.80L-48.66 -68.47L-34.97 -76.38L-37.46 -92.72L-30.90 -95.11L-22.31 -80.98Z"/><circle cx="0" cy="0" r="30"/><circle cx="0" cy="0" r="13"/><path d="M0 -30V30M-30 0H30"/></svg></span>
         <span class="sw-gear g2"><svg class="sw-gear-svg" viewBox="-104 -104 208 208" aria-hidden="true"><path d="M-9.85 -81.41L-5.23 -99.86L5.23 -99.86L9.85 -81.41L32.17 -75.43L45.40 -89.10L54.46 -83.87L49.23 -65.57L65.57 -49.23L83.87 -54.46L89.10 -45.40L75.43 -32.17L81.41 -9.85L99.86 -5.23L99.86 5.23L81.41 9.85L75.43 32.17L89.10 45.40L83.87 54.46L65.57 49.23L49.23 65.57L54.46 83.87L45.40 89.10L32.17 75.43L9.85 81.41L5.23 99.86L-5.23 99.86L-9.85 81.41L-32.17 75.43L-45.40 89.10L-54.46 83.87L-49.23 65.57L-65.57 49.23L-83.87 54.46L-89.10 45.40L-75.43 32.17L-81.41 9.85L-99.86 5.23L-99.86 -5.23L-81.41 -9.85L-75.43 -32.17L-89.10 -45.40L-83.87 -54.46L-65.57 -49.23L-49.23 -65.57L-54.46 -83.87L-45.40 -89.10L-32.17 -75.43Z"/><circle cx="0" cy="0" r="28"/><circle cx="0" cy="0" r="12"/><path d="M0 -28V28M-28 0H28"/></svg></span>
         <span class="sw-gear g3"><svg class="sw-gear-svg" viewBox="-104 -104 208 208" aria-hidden="true"><path d="M-11.52 -79.17L-6.28 -99.80L6.28 -99.80L11.52 -79.17L37.21 -70.82L53.58 -84.43L63.74 -77.05L55.85 -57.27L71.73 -35.42L92.98 -36.81L96.86 -24.87L78.85 -13.51L78.85 13.51L96.86 24.87L92.98 36.81L71.73 35.42L55.85 57.27L63.74 77.05L53.58 84.43L37.21 70.82L11.52 79.17L6.28 99.80L-6.28 99.80L-11.52 79.17L-37.21 70.82L-53.58 84.43L-63.74 77.05L-55.85 57.27L-71.73 35.42L-92.98 36.81L-96.86 24.87L-78.85 13.51L-78.85 -13.51L-96.86 -24.87L-92.98 -36.81L-71.73 -35.42L-55.85 -57.27L-63.74 -77.05L-53.58 -84.43L-37.21 -70.82Z"/><circle cx="0" cy="0" r="26"/><circle cx="0" cy="0" r="11"/><path d="M0 -26V26M-26 0H26"/></svg></span>
@@ -3019,23 +3034,42 @@ function swBuildSparks(){
   if(!host||host.childElementCount)return;
   const rnd=(a,b)=>Math.random()*(b-a)+a;
   const frag=document.createDocumentFragment();
-  [{r:96,n:14,d:[2,5]},{r:62,n:10,d:[1.6,3.6]}].forEach(g=>{
+  // Dos anillos de chispas: el del aro dentado y uno interno
+  [{k:0.44,n:14,d:[2,5]},{k:0.30,n:10,d:[1.6,3.6]}].forEach(g=>{
     for(let i=0;i<g.n;i++){
-      const a=rnd(0,Math.PI*2);
-      const sx=Math.cos(a)*g.r,sy=Math.sin(a)*g.r;
-      const s=document.createElement('span');
+      const a=rnd(0,Math.PI*2),s=document.createElement('span');
       s.className='sw-spark';
-      s.style.setProperty('--sx',sx.toFixed(1));
-      s.style.setProperty('--sy',sy.toFixed(1));
-      s.style.setProperty('--tx',(sx+(-sy*rnd(.5,1.5))).toFixed(1));
-      s.style.setProperty('--ty',(sy+(sx*rnd(.5,1.5))).toFixed(1));
+      s.dataset.k=g.k;s.dataset.a=a;
+      s.dataset.fx=(-Math.sin(a)*rnd(.5,1.5)).toFixed(3);
+      s.dataset.fy=(Math.cos(a)*rnd(.5,1.5)).toFixed(3);
       s.style.animationDuration=rnd(g.d[0],g.d[1]).toFixed(2)+'s';
       s.style.animationDelay=(-rnd(0,4)).toFixed(2)+'s';
       frag.appendChild(s);
     }
   });
   host.appendChild(frag);
+  swSizeSparks();
+  // El motor escala con la pantalla, así que las chispas se recalculan
+  // cuando cambia el tamaño de la esfera (rotar el teléfono, redimensionar).
+  const wrap=document.querySelector('.sw-circle-wrap');
+  if(wrap&&'ResizeObserver' in window)new ResizeObserver(swSizeSparks).observe(wrap);
 }
+// Convierte los ángulos guardados en píxeles según el tamaño actual
+function swSizeSparks(){
+  const wrap=document.querySelector('.sw-circle-wrap');
+  if(!wrap)return;
+  const size=wrap.clientWidth*1.6;   // el motor mide 160% de la esfera
+  if(!size)return;
+  document.querySelectorAll('#swSparks .sw-spark').forEach(s=>{
+    const r=size*parseFloat(s.dataset.k),a=parseFloat(s.dataset.a);
+    const sx=Math.cos(a)*r,sy=Math.sin(a)*r;
+    s.style.setProperty('--sx',sx.toFixed(1));
+    s.style.setProperty('--sy',sy.toFixed(1));
+    s.style.setProperty('--tx',(sx+sy*parseFloat(s.dataset.fx)*-1).toFixed(1));
+    s.style.setProperty('--ty',(sy+sx*parseFloat(s.dataset.fy)).toFixed(1));
+  });
+}
+
 function swEngineRunning(on){
   const e=document.getElementById('swEngine');
   if(e)e.classList.toggle('running',!!on);
