@@ -103,8 +103,12 @@
    //  que efectivamente se usa. Al final del archivo se documenta el
    //  set de variables para "Modo Claro" tal como fue especificado,
      listo para activarlo el día que Vesta tenga un tema claro completo. */
-  --neo-bg:#1e1e1e;
-  --neo-bg-grad:linear-gradient(145deg,#212121,#1a1a1a);
+  /* Tarjetas: antes eran gris neutro y opaco (#1e1e1e), que tapaba el
+     fondo y no pegaba con la paleta. Ahora son latón translúcido: dejan
+     ver la cuadrícula y los engranajes, con blur para que el texto se lea. */
+  --neo-bg:rgba(30,20,9,0.52);
+  --neo-bg-grad:linear-gradient(145deg,rgba(44,30,13,0.55),rgba(20,13,5,0.45));
+  --neo-blur:blur(10px);
   --neo-border-top:rgba(255,255,255,0.05);
   --neo-shadow:0 14px 34px rgba(0,0,0,0.45),0 2px 8px rgba(0,0,0,0.3);
 
@@ -226,7 +230,8 @@ input,textarea{font-family:inherit;}
 /* ── Tarjetas de alarma (Neomorfismo) ──────────────────────────── */
 .alarm-card{
   background:var(--neo-bg);background-image:var(--neo-bg-grad);
-  border:1px solid transparent;border-top:1px solid var(--neo-border-top);
+  -webkit-backdrop-filter:var(--neo-blur);backdrop-filter:var(--neo-blur);
+  border:1px solid var(--line);border-top:1px solid var(--neo-border-top);
   border-radius:var(--radius);
   padding:16px 16px 14px;margin-bottom:12px;
   box-shadow:var(--neo-shadow);
@@ -265,7 +270,8 @@ input,textarea{font-family:inherit;}
 .sw-label{font-size:var(--kicker);font-weight:800;letter-spacing:3px;color:var(--brass);text-transform:uppercase;}
 .sw-title{font-size:clamp(22px,6vw,28px);font-weight:600;margin-top:4px;color:var(--ink);}
 .sw-circle-wrap{position:relative;width:min(74vw,280px);height:min(74vw,280px);margin:28px auto 30px;}
-.sw-circle{position:absolute;inset:0;border-radius:50%;background:radial-gradient(circle at 50% 40%,rgba(40,28,10,0.75),rgba(16,10,4,0.85));
+.sw-circle{position:absolute;inset:0;border-radius:50%;background:radial-gradient(circle at 50% 40%,rgba(44,30,12,0.55),rgba(14,9,3,0.78));
+  -webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px);
   border:1px solid var(--line);display:flex;flex-direction:column;align-items:center;justify-content:center;
   box-shadow:inset 0 2px 24px rgba(0,0,0,0.5);}
 .sw-ring{position:absolute;inset:-6px;border-radius:50%;border:3px solid transparent;
@@ -310,7 +316,8 @@ input,textarea{font-family:inherit;}
 .reg-fields{display:flex;flex-direction:column;gap:10px;}
 .reg-field-group{display:flex;align-items:center;gap:12px;padding:14px 14px;border-radius:16px;
   background:var(--neo-bg);background-image:var(--neo-bg-grad);
-  border:1px solid transparent;border-top:1px solid var(--neo-border-top);
+  -webkit-backdrop-filter:var(--neo-blur);backdrop-filter:var(--neo-blur);
+  border:1px solid var(--line);border-top:1px solid var(--neo-border-top);
   box-shadow:var(--neo-shadow);
   cursor:pointer;transition:border-color .15s,box-shadow .15s;}
 .reg-field-group:active{border-color:var(--line-strong);box-shadow:var(--neo-shadow);}
@@ -435,7 +442,8 @@ input,textarea{font-family:inherit;}
 .aw-saved-del{background:none;border:none;font-size:16px;cursor:pointer;opacity:.6;flex-shrink:0;padding:4px;}
 
 /* Hoja de selección de categoría */
-.aw-sheet-ov{position:fixed;inset:0;z-index:60;background:rgba(6,3,0,0.6);backdrop-filter:blur(4px);
+.aw-sheet-ov{position:fixed;inset:0;z-index:60;background:rgba(6,3,0,0.45);
+  -webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px);
   display:flex;align-items:flex-end;justify-content:center;opacity:0;visibility:hidden;transition:.25s;}
 .aw-sheet-ov.open{opacity:1;visibility:visible;}
 .aw-sheet{width:100%;max-width:var(--max);background:#140d05;border-top-left-radius:24px;border-top-right-radius:24px;
@@ -480,14 +488,16 @@ input,textarea{font-family:inherit;}
 
 /* ── Modales (overlays) ─────────────────────────────────────────── */
 .modal-overlay,.event-modal-overlay,.mini-modal-overlay{
-  position:fixed;inset:0;z-index:70;background:rgba(6,3,0,0.65);backdrop-filter:blur(5px);
+  position:fixed;inset:0;z-index:70;background:rgba(6,3,0,0.48);
+  -webkit-backdrop-filter:blur(7px);backdrop-filter:blur(7px);
   opacity:0;visibility:hidden;transition:.25s;}
 .modal-overlay.open,.event-modal-overlay.open,.mini-modal-overlay.open{opacity:1;visibility:visible;}
 
 /* Bottom-sheet modals (alarma, evento) */
 .modal-overlay,.event-modal-overlay{display:flex;align-items:flex-end;justify-content:center;}
 .modal,.event-modal{
-  width:100%;max-width:var(--max);background:#140d05;border:1px solid var(--line);border-bottom:none;
+  width:100%;max-width:var(--max);background:linear-gradient(180deg,rgba(32,21,8,0.88),rgba(16,10,3,0.94));
+  -webkit-backdrop-filter:blur(22px);backdrop-filter:blur(22px);border:1px solid var(--line);border-bottom:none;
   border-top-left-radius:26px;border-top-right-radius:26px;
   padding:14px 20px calc(env(safe-area-inset-bottom,0px) + 24px);
   transform:translateY(100%);transition:transform .42s cubic-bezier(.34,1.32,.5,1);}
@@ -546,7 +556,8 @@ input,textarea{font-family:inherit;}
 
 /* Mini-modal (centrado) */
 .mini-modal-overlay{display:flex;align-items:center;justify-content:center;padding:24px;}
-.mini-modal{width:100%;max-width:320px;background:#140d05;border:1px solid var(--line);border-radius:22px;
+.mini-modal{width:100%;max-width:320px;background:linear-gradient(180deg,rgba(32,21,8,0.9),rgba(16,10,3,0.94));
+  -webkit-backdrop-filter:blur(22px);backdrop-filter:blur(22px);border:1px solid var(--line);border-radius:22px;
   padding:24px 22px;transform:scale(.92);transition:transform .25s ease;}
 .mini-modal-overlay.open .mini-modal{transform:none;}
 .mini-modal-title{font-size:var(--kicker);font-weight:800;letter-spacing:3px;color:var(--brass);
@@ -790,6 +801,7 @@ body.theme-light .alarm-card,
 body.theme-light .reg-field-group{
   --neo-bg:#ffffff;
   --neo-bg-grad:linear-gradient(145deg,#ffffff,#f4f4f4);
+  --neo-blur:none;
   --neo-border-top:rgba(255,255,255,0.6);
   --neo-shadow:0 10px 30px rgba(0,0,0,0.05),0 1px 3px rgba(0,0,0,0.02);
   --ink:#2b2620;
@@ -1602,6 +1614,49 @@ img,svg,video{max-width:100%;}
 }
 
 /* ══════════════════════════════════════════════════════════════════
+ //  SW-ENGINE — Motor del cronómetro (port de "Chronos Engine")
+ //  Tres engranajes girando, un núcleo que late y chispas que salen en
+ //  tangente. Todo en la paleta de la casa (latón y ámbar), detrás de la
+ //  esfera translúcida. Las chispas aparecen solo con el cronómetro
+ //  andando: el motor "trabaja" cuando vos lo hacés. Las animaciones se
+ //  pausan solas cuando la pestaña no está activa.
+   ══════════════════════════════════════════════════════════════════ */
+.sw-engine{position:absolute;inset:-14%;pointer-events:none;z-index:0;}
+.sw-core{position:absolute;left:50%;top:50%;width:26%;height:26%;border-radius:50%;transform:translate(-50%,-50%);
+  background:radial-gradient(circle,rgba(255,226,165,0.85),rgba(232,184,74,0.35) 45%,transparent 72%);
+  animation:swCore 3.6s ease-in-out infinite;}
+.sw-gear{position:absolute;display:block;}
+.sw-gear-svg{width:100%;height:100%;display:block;fill:none;stroke:var(--brass);stroke-width:3;
+  stroke-linejoin:round;vector-effect:non-scaling-stroke;}
+.sw-gear.g1{width:34%;height:34%;left:-5%;top:4%;opacity:.42;animation:swGear 26s linear infinite;}
+.sw-gear.g2{width:25%;height:25%;right:-3%;bottom:14%;opacity:.36;animation:swGear 18s linear infinite reverse;}
+.sw-gear.g3{width:19%;height:19%;left:12%;bottom:1%;opacity:.32;animation:swGear 13s linear infinite;}
+.sw-sparks{position:absolute;left:50%;top:50%;width:0;height:0;}
+.sw-spark{position:absolute;width:3px;height:3px;border-radius:50%;background:#ffe2a5;opacity:0;
+  box-shadow:0 0 7px 2px rgba(240,190,90,0.75);}
+/* Con el cronómetro andando: el motor acelera, brilla y suelta chispas */
+.sw-engine.running .sw-gear.g1{animation-duration:9s;opacity:.62;}
+.sw-engine.running .sw-gear.g2{animation-duration:6s;opacity:.54;}
+.sw-engine.running .sw-gear.g3{animation-duration:4.4s;opacity:.48;}
+.sw-engine.running .sw-core{animation-duration:1.8s;}
+.sw-engine.running .sw-spark{animation-name:swSpark;animation-timing-function:ease-out;animation-iteration-count:infinite;}
+@keyframes swCore{
+  0%,100%{transform:translate(-50%,-50%) scale(1);opacity:.75;}
+  50%{transform:translate(-50%,-50%) scale(1.18);opacity:1;}
+}
+@keyframes swGear{to{transform:rotate(360deg);}}
+@keyframes swSpark{
+  0%{transform:translate(calc(var(--sx) * 1px),calc(var(--sy) * 1px)) scale(1);opacity:1;}
+  100%{transform:translate(calc(var(--tx) * 1px),calc(var(--ty) * 1px)) scale(.4);opacity:0;}
+}
+/* Fuera de la pestaña del cronómetro no hay nada que animar */
+#page-stopwatch:not(.active) .sw-engine :where(.sw-core,.sw-gear,.sw-spark){animation-play-state:paused;}
+@media (prefers-reduced-motion:reduce){
+  .sw-core,.sw-gear,.sw-spark{animation:none !important;}
+  .sw-spark{opacity:0;}
+}
+
+/* ══════════════════════════════════════════════════════════════════
  //  FONDO — lámina de ingeniería
  //  Una cuadrícula de plano técnico (mayor cada 120px, menor cada 24px)
  //  grabada en latón, que se desvanece hacia los bordes, y una lámpara
@@ -1934,9 +1989,7 @@ img,svg,video{max-width:100%;}
   <!-- ALARMAS -->
   <div class="page active" id="page-alarms">
     <div class="header">
-      <div class="header-left">
-        <span class="label-top">ALARMA PERSONALIZADA</span>
-      </div>
+      <div class="header-left"></div>
       <button class="btn-seal" onclick="openMechSheet()" aria-label="Mecanismo y privacidad" data-icon="gear" data-icon-size="19"></button>
       <button class="btn-add" onclick="openModal()" aria-label="Nueva alarma" data-icon="plus" data-icon-size="22"></button>
     </div>
@@ -1962,10 +2015,17 @@ img,svg,video{max-width:100%;}
   <!-- CRONÓMETRO -->
   <div class="page" id="page-stopwatch">
     <div class="sw-title-row">
-      <span class="sw-label">HERRAMIENTA</span>
       <div class="sw-title">Cronómetro</div>
     </div>
     <div class="sw-circle-wrap">
+      <!-- Motor: núcleo + tres engranajes + chispas (ver "SW-ENGINE") -->
+      <div class="sw-engine" id="swEngine" aria-hidden="true">
+        <span class="sw-core"></span>
+        <span class="sw-gear g1"><svg class="sw-gear-svg" viewBox="-104 -104 208 208" aria-hidden="true"><path d="M-6.74 -83.73L-3.49 -99.94L3.49 -99.94L6.74 -83.73L22.31 -80.98L30.90 -95.11L37.46 -92.72L34.97 -76.38L48.66 -68.47L61.57 -78.80L66.91 -74.31L58.98 -59.81L69.14 -47.70L84.80 -52.99L88.29 -46.95L75.88 -36.03L81.29 -21.17L97.81 -20.79L99.03 -13.92L83.63 -7.91L83.63 7.91L99.03 13.92L97.81 20.79L81.29 21.17L75.88 36.03L88.29 46.95L84.80 52.99L69.14 47.70L58.98 59.81L66.91 74.31L61.57 78.80L48.66 68.47L34.97 76.38L37.46 92.72L30.90 95.11L22.31 80.98L6.74 83.73L3.49 99.94L-3.49 99.94L-6.74 83.73L-22.31 80.98L-30.90 95.11L-37.46 92.72L-34.97 76.38L-48.66 68.47L-61.57 78.80L-66.91 74.31L-58.98 59.81L-69.14 47.70L-84.80 52.99L-88.29 46.95L-75.88 36.03L-81.29 21.17L-97.81 20.79L-99.03 13.92L-83.63 7.91L-83.63 -7.91L-99.03 -13.92L-97.81 -20.79L-81.29 -21.17L-75.88 -36.03L-88.29 -46.95L-84.80 -52.99L-69.14 -47.70L-58.98 -59.81L-66.91 -74.31L-61.57 -78.80L-48.66 -68.47L-34.97 -76.38L-37.46 -92.72L-30.90 -95.11L-22.31 -80.98Z"/><circle cx="0" cy="0" r="30"/><circle cx="0" cy="0" r="13"/><path d="M0 -30V30M-30 0H30"/></svg></span>
+        <span class="sw-gear g2"><svg class="sw-gear-svg" viewBox="-104 -104 208 208" aria-hidden="true"><path d="M-9.85 -81.41L-5.23 -99.86L5.23 -99.86L9.85 -81.41L32.17 -75.43L45.40 -89.10L54.46 -83.87L49.23 -65.57L65.57 -49.23L83.87 -54.46L89.10 -45.40L75.43 -32.17L81.41 -9.85L99.86 -5.23L99.86 5.23L81.41 9.85L75.43 32.17L89.10 45.40L83.87 54.46L65.57 49.23L49.23 65.57L54.46 83.87L45.40 89.10L32.17 75.43L9.85 81.41L5.23 99.86L-5.23 99.86L-9.85 81.41L-32.17 75.43L-45.40 89.10L-54.46 83.87L-49.23 65.57L-65.57 49.23L-83.87 54.46L-89.10 45.40L-75.43 32.17L-81.41 9.85L-99.86 5.23L-99.86 -5.23L-81.41 -9.85L-75.43 -32.17L-89.10 -45.40L-83.87 -54.46L-65.57 -49.23L-49.23 -65.57L-54.46 -83.87L-45.40 -89.10L-32.17 -75.43Z"/><circle cx="0" cy="0" r="28"/><circle cx="0" cy="0" r="12"/><path d="M0 -28V28M-28 0H28"/></svg></span>
+        <span class="sw-gear g3"><svg class="sw-gear-svg" viewBox="-104 -104 208 208" aria-hidden="true"><path d="M-11.52 -79.17L-6.28 -99.80L6.28 -99.80L11.52 -79.17L37.21 -70.82L53.58 -84.43L63.74 -77.05L55.85 -57.27L71.73 -35.42L92.98 -36.81L96.86 -24.87L78.85 -13.51L78.85 13.51L96.86 24.87L92.98 36.81L71.73 35.42L55.85 57.27L63.74 77.05L53.58 84.43L37.21 70.82L11.52 79.17L6.28 99.80L-6.28 99.80L-11.52 79.17L-37.21 70.82L-53.58 84.43L-63.74 77.05L-55.85 57.27L-71.73 35.42L-92.98 36.81L-96.86 24.87L-78.85 13.51L-78.85 -13.51L-96.86 -24.87L-92.98 -36.81L-71.73 -35.42L-55.85 -57.27L-63.74 -77.05L-53.58 -84.43L-37.21 -70.82Z"/><circle cx="0" cy="0" r="26"/><circle cx="0" cy="0" r="11"/><path d="M0 -26V26M-26 0H26"/></svg></span>
+        <span class="sw-sparks" id="swSparks"></span>
+      </div>
       <div class="sw-circle">
         <div class="sw-time" id="swTime">00:00</div>
         <div class="sw-ms" id="swMs">.00</div>
@@ -1982,12 +2042,11 @@ img,svg,video{max-width:100%;}
   <!-- PRESUPUESTO -->
   <div class="page" id="page-registro">
     <div class="reg-title-row">
-      <span class="reg-label">FINANZAS</span>
       <div class="reg-title">Presupuesto</div>
     </div>
     <div class="donut-wrap">
       <svg viewBox="0 0 260 260" id="donutSvg">
-        <circle cx="130" cy="130" r="100" fill="none" stroke="#1a1008" stroke-width="28"/>
+        <circle cx="130" cy="130" r="100" fill="none" stroke="rgba(26,16,8,0.55)" stroke-width="28"/>
         <g id="donutSegments"></g>
       </svg>
       <div class="donut-center">
@@ -2126,7 +2185,6 @@ img,svg,video{max-width:100%;}
     <div class="aw-wrap">
       <div class="aw-scroll">
         <header class="aw-head">
-          <div class="aw-kicker">Armario Inteligente</div>
           <div class="aw-title">Tu Clóset</div>
           <!-- Sub-pestañas -->
           <div class="aw-subtabs">
@@ -2178,7 +2236,6 @@ img,svg,video{max-width:100%;}
   <!-- RUTINAS DE GYM -->
   <div class="page" id="page-gym">
     <div class="gym-head">
-      <span class="gym-kicker">ENTRENAMIENTO</span>
       <div class="gym-title">Rutinas de Gym</div>
       <div class="gym-subtabs">
         <span class="gym-pill" id="gymPill"></span>
@@ -2953,6 +3010,38 @@ function swTick(){
   EL.swMs.textContent=f.ms;
   if(swRunning)swRaf=requestAnimationFrame(swTick);
 }
+// ── Motor del cronómetro: chispas ─────────────────────────────────────
+// Port del emisor de chispas de Chronos Engine. Cada chispa nace en un
+// punto del borde de un engranaje y sale en tangente. Se crean una sola
+// vez (24 en total) y el CSS las anima solo cuando el cronómetro corre.
+function swBuildSparks(){
+  const host=document.getElementById('swSparks');
+  if(!host||host.childElementCount)return;
+  const rnd=(a,b)=>Math.random()*(b-a)+a;
+  const frag=document.createDocumentFragment();
+  [{r:96,n:14,d:[2,5]},{r:62,n:10,d:[1.6,3.6]}].forEach(g=>{
+    for(let i=0;i<g.n;i++){
+      const a=rnd(0,Math.PI*2);
+      const sx=Math.cos(a)*g.r,sy=Math.sin(a)*g.r;
+      const s=document.createElement('span');
+      s.className='sw-spark';
+      s.style.setProperty('--sx',sx.toFixed(1));
+      s.style.setProperty('--sy',sy.toFixed(1));
+      s.style.setProperty('--tx',(sx+(-sy*rnd(.5,1.5))).toFixed(1));
+      s.style.setProperty('--ty',(sy+(sx*rnd(.5,1.5))).toFixed(1));
+      s.style.animationDuration=rnd(g.d[0],g.d[1]).toFixed(2)+'s';
+      s.style.animationDelay=(-rnd(0,4)).toFixed(2)+'s';
+      frag.appendChild(s);
+    }
+  });
+  host.appendChild(frag);
+}
+function swEngineRunning(on){
+  const e=document.getElementById('swEngine');
+  if(e)e.classList.toggle('running',!!on);
+}
+swBuildSparks();
+
 function swToggle(){
   if(!swRunning){
     swRunning=true;swStart=performance.now();_swLastMain='';
@@ -2962,6 +3051,7 @@ function swToggle(){
     EL.swStopBtn.disabled=false;
     EL.swRing.classList.add('running');
     EL.swTime.classList.add('running');
+    swEngineRunning(true);
     cancelAnimationFrame(swRaf);
     swRaf=requestAnimationFrame(swTick);
   }else{
@@ -2972,6 +3062,7 @@ function swToggle(){
     EL.swStartBtn.classList.remove('running');
     EL.swRing.classList.remove('running');
     EL.swTime.classList.remove('running');
+    swEngineRunning(false);
     const f=swFmt(swElapsed);
     swLaps.unshift({num:swLaps.length+1,time:f.main+f.ms});
     renderLaps();
@@ -2987,6 +3078,7 @@ function swStop(){
   EL.swStopBtn.disabled=true;
   EL.swRing.classList.remove('running');
   EL.swTime.classList.remove('running');
+  swEngineRunning(false);
   swLaps=[];renderLaps();
 }
 function renderLaps(){
