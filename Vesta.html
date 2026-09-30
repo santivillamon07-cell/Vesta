@@ -12,11 +12,15 @@
   ¿Querés cambiar…                    → Buscá en el archivo…
   ───────────────────────────────────────────────────────────────────
   Colores, radios, tipografías        → ":root{" (arriba del <style>)
+  Sonido del temporizador             → "tmSoundLabel" (JS, sección 5.3)
+  Ruedas de duración                  → "TM_WHEEL" (JS, sección 5.3)
+  Colores de ropa del armario         → "AW_SWATCHES" (JS, sección 7b)
   Curvas y duraciones del movimiento  → "TANDA 3 — Movimiento fluido"
   El fondo (engranajes, péndulo)      → "TANDA 4" y el div #mech
   Velocidad del mecanismo             → "const Mech" (módulo JS)
   Iconos                              → "const ICON" (JS, sección 0)
   Avisos y sus tonos                  → "function showBanner"
+  Cronómetro / Temporizador           → "5) TIEMPO" (JS) y "TIEMPO —" (CSS)
   Una pestaña entera                  → el comentario HTML "ALARMAS", "GYM"…
                                         (acá no se escriben los marcadores de
                                         comentario: cerrarían este bloque)
@@ -34,9 +38,16 @@
      cada cuadro y se nota en teléfonos.
   3. Duraciones y curvas salen de los tokens (--dur-*, --ease-*).
      Un número suelto hoy son veinte números distintos en un año.
+  4. Todo lo que cuenta tiempo se mide contra el reloj (performance.now
+     o una fecha límite), nunca sumando ticks: en segundo plano el
+     navegador ralentiza rAF y setInterval, y un contador se atrasa.
 
   CÓMO SE AGREGAN COSAS
   ───────────────────────────────────────────────────────────────────
+  · Sub-pestañas dentro de una pestaña  → copiar el patrón de "sw-subtabs"
+                                          (pill + .sw-pane.active); Gym tiene
+                                          el suyo propio a propósito, con sus
+                                          tokens: no se comparten clases
   · Lista nueva con entrada en cascada  → clase "stagger" en el contenedor
   · Icono nuevo                          → sumarlo al objeto ICON
   · Gesto al terminar un proceso         → wrapAfter('miFuncion', …)
@@ -711,9 +722,18 @@ input,textarea{font-family:inherit;}
   box-shadow:0 0 0 3px rgba(216,178,90,0.12);background:rgba(255,255,255,0.05);}
 .gym-ex-name::placeholder,
 .gym-load-name::placeholder{color:var(--faint);font-weight:500;}
-.gym-ex-del,.gym-load-del{background:none;border:none;font-size:18px;cursor:pointer;opacity:.6;
-  flex-shrink:0;padding:4px;line-height:1;transition:opacity .15s;}
-.gym-ex-del:active,.gym-load-del:active{opacity:1;}
+/* Botones de eliminar. Antes heredaban el color del texto con opacity .6,
+   o sea un icono beige apagado que no se leía como "esto borra". Ahora
+   usan el rojo de la casa (--danger), tienen su propia zona táctil de
+   36px y un fondo que se enciende al pasar o tocar — mismo patrón que el
+   botón de borrar gasto del Presupuesto, para que borrar se vea igual en
+   toda la app. Se anima background-color, no el tamaño. */
+.gym-ex-del,.gym-load-del{
+  flex-shrink:0;width:36px;height:36px;border-radius:11px;border:none;padding:0;cursor:pointer;
+  background:rgba(224,92,92,0.1);color:#e8736e;line-height:1;
+  transition:background-color var(--dur-2) ease,color var(--dur-2) ease;}
+.gym-ex-del:hover,.gym-load-del:hover{background:rgba(224,92,92,0.2);color:#f08a84;}
+.gym-ex-del:active,.gym-load-del:active{background:rgba(224,92,92,0.28);color:#ff9a94;}
 .gym-ex-fields{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
 .gym-stepper{border-radius:12px;padding:8px 10px;
   background:rgba(255,255,255,0.03);border:1px solid rgba(216,178,90,0.15);
@@ -1614,6 +1634,174 @@ img,svg,video{max-width:100%;}
 }
 
 /* ══════════════════════════════════════════════════════════════════
+ //  TIEMPO — Cronómetro y Temporizador comparten pestaña
+ //  El segmented control reusa la misma carpintería del de Gym. No se
+ //  heredan sus clases a propósito: Gym tiene su propio set de tokens
+ //  (--gym-glass, --gym-blur) y acoplar las dos pantallas haría que
+ //  tocar una rompiera la otra.
+   ══════════════════════════════════════════════════════════════════ */
+.sw-subtabs{
+  position:relative;display:flex;margin:16px auto 0;max-width:340px;
+  background:rgba(30,20,8,0.55);border:1px solid var(--line);
+  -webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px);
+  border-radius:14px;padding:4px;
+}
+.sw-pill{position:absolute;top:4px;left:4px;width:calc(50% - 4px);height:calc(100% - 8px);
+  background:linear-gradient(135deg,#f0c869,#c8983a);border-radius:11px;
+  box-shadow:0 4px 14px rgba(200,150,58,0.35);
+  transition:transform var(--dur-2) var(--ease-glide);z-index:0;}
+.sw-pill.right{transform:translateX(100%);}
+.sw-subtab{position:relative;z-index:1;flex:1;border:none;background:none;padding:9px 0;font-size:12px;
+  font-weight:700;letter-spacing:1.2px;text-transform:uppercase;color:var(--muted);cursor:pointer;
+  transition:color var(--dur-2) ease;}
+.sw-subtab.active{color:#1a1206;}
+.sw-subtab:active{transform:none;opacity:1;}
+.sw-pane{display:none;}
+.sw-pane.active{display:block;animation:fadeIn .25s ease;}
+
+/* ── Temporizador ────────────────────────────────────────────────── */
+/* El progreso se dibuja SOBRE el aro dentado, no en un círculo aparte.
+   La opacidad va en el trazo (stroke-opacity) y no en el contenedor,
+   porque un opacity en el <span> apagaría también la aguja.
+
+   Calibración del tono: el aro del cronómetro es un trazo latón al 50%
+   (85% en marcha). Acá hay DOS trazos encimados, y dos capas se suman:
+   el resultado de pintar .12 debajo de .45 es 1-(1-.12)(1-.45) = 0,516.
+   Por eso los números parecen bajos — sumados dan el mismo 50% del
+   cronómetro. Si tocás uno, recalculá el otro o los dos diales dejan de
+   verse iguales, que era justo el problema que esto arregla. */
+.sw-rim.gauge{opacity:1;}
+.sw-rim.gauge .sw-gear-base,
+.sw-rim.gauge circle{stroke-opacity:.12;}
+.sw-engine.running .sw-rim.gauge .sw-gear-base,
+.sw-engine.running .sw-rim.gauge circle{stroke-opacity:.16;}
+.sw-rim-fill{stroke:var(--brass);stroke-width:2.6;stroke-opacity:.45;
+  stroke-dasharray:1;stroke-dashoffset:0;
+  transition:stroke-dashoffset .25s linear,stroke .3s ease,stroke-opacity .3s ease;}
+.sw-engine.running .sw-rim-fill{stroke-opacity:.82;}
+/* Últimos segundos y fin: acá sí cambia el color, que es información. */
+.sw-rim-fill.warn{stroke:#e0894a;stroke-opacity:.9;}
+.sw-rim-fill.over{stroke:var(--danger);stroke-opacity:.95;}
+
+/* La cifra es un botón: tocarla abre el teclado de duración */
+.tm-time{border:none;background:none;padding:0;cursor:pointer;font-family:var(--mono-font);
+  font-variant-numeric:tabular-nums;}
+.tm-time:active{transform:none;opacity:1;}
+.tm-time:focus-visible{outline:2px solid var(--amber);outline-offset:6px;border-radius:10px;}
+/* Panel compacto mientras se escribe: el dial se arrima y el teclado
+   entra completo junto con la botonera. No se achica el dial en sí —
+   cambiar su tamaño movería el motor y las chispas. */
+#sw-pane-timer.editing .sw-circle-wrap{margin-top:16px;margin-bottom:14px;}
+#sw-pane-timer.editing .sw-controls{margin-bottom:14px;}
+#sw-pane-timer.editing .tm-sound{display:none;}
+/* Pantallas bajas (teléfonos chicos, o cualquiera en horizontal): ahí sí
+   se achica el dial mientras se escribe, porque si no la botonera queda
+   tapada por la barra de pestañas. Al cambiar de tamaño, el
+   ResizeObserver del motor recoloca las chispas solo. */
+@media (max-height:720px){
+  #sw-pane-timer.editing .sw-circle-wrap{width:min(44vw,180px);height:min(44vw,180px);
+    margin-top:10px;margin-bottom:10px;}
+  #sw-pane-timer.editing .tm-time{font-size:clamp(30px,9vw,38px);}
+  #sw-pane-timer.editing .tm-state{font-size:9px;letter-spacing:1.6px;}
+  #sw-pane-timer.editing .tm-wheels{--tm-item:34px;--tm-rows:3;}
+}
+
+/* Pista de uso. Con el reloj corriendo se desvanece pero conserva su
+   lugar, para que la botonera no se suba y se baje sola. Con las ruedas
+   abiertas sí se colapsa: ahí ese espacio lo ocupan ellas. */
+.tm-hint{margin:0 auto 22px;max-width:300px;text-align:center;font-size:12.5px;line-height:1.5;
+  color:var(--faint);transition:opacity var(--dur-2) ease;}
+.tm-hint.hidden{opacity:0;pointer-events:none;}
+#sw-pane-timer.editing .tm-hint{display:none;}
+
+/* ── Ruedas de duración ───────────────────────────────────────────
+   Dos columnas que se arrastran, minutos y segundos. Están hechas con
+   scroll nativo + scroll-snap en vez de JavaScript siguiendo el dedo:
+   así el desplazamiento con inercia, el rebote y la velocidad los pone
+   el sistema operativo, que siempre los va a hacer mejor y más suave
+   que un rAF nuestro. El JS solo lee en qué fila quedó parada.
+   --tm-item es el alto de fila: el JS lo lee de acá, así que el tamaño
+   se cambia en un solo lugar. */
+.tm-wheels{--tm-item:38px;--tm-rows:5;
+  display:flex;align-items:stretch;justify-content:center;gap:10px;
+  margin:0 auto 18px;max-width:270px;position:relative;}
+.tm-wheels[hidden]{display:none;}
+.tm-wheels.open{animation:tmWheelIn var(--dur-3) var(--ease-glide);}
+@keyframes tmWheelIn{from{opacity:0;transform:translateY(-8px);}to{opacity:1;transform:none;}}
+
+.tm-wcol{flex:1;min-width:0;display:flex;flex-direction:column;align-items:center;}
+.tm-wlabel{font-size:9.5px;font-weight:800;letter-spacing:2.2px;text-transform:uppercase;
+  color:var(--faint);margin-bottom:6px;}
+/* La banda central marca cuál es el valor elegido. Va detrás de los
+   números y no recibe toques, para no robarle el gesto al scroll. */
+.tm-wbox{position:relative;width:100%;border-radius:14px;
+  background:rgba(30,20,8,0.5);border:1px solid var(--line);
+  -webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px);overflow:hidden;}
+.tm-wbox::before{content:"";position:absolute;left:6px;right:6px;top:50%;height:var(--tm-item);
+  transform:translateY(-50%);border-radius:10px;pointer-events:none;z-index:0;
+  background:rgba(232,184,74,0.12);box-shadow:inset 0 0 0 1px rgba(232,184,74,0.3);}
+.tm-wlist{position:relative;z-index:1;height:calc(var(--tm-item) * var(--tm-rows));
+  overflow-y:auto;overscroll-behavior:contain;
+  scroll-snap-type:y mandatory;-webkit-overflow-scrolling:touch;
+  scrollbar-width:none;
+  /* Los extremos se desvanecen: deja claro que la lista sigue y que lo
+     que vale es la fila del centro. */
+  -webkit-mask-image:linear-gradient(to bottom,transparent,#000 24%,#000 76%,transparent);
+  mask-image:linear-gradient(to bottom,transparent,#000 24%,#000 76%,transparent);}
+.tm-wlist::-webkit-scrollbar{display:none;}
+.tm-wlist:focus-visible{outline:2px solid var(--amber);outline-offset:-2px;border-radius:12px;}
+.tm-wopt{height:var(--tm-item);line-height:var(--tm-item);text-align:center;
+  scroll-snap-align:center;scroll-snap-stop:always;cursor:pointer;
+  font-family:var(--mono-font);font-variant-numeric:tabular-nums;
+  font-size:19px;font-weight:600;color:var(--muted);
+  transition:color var(--dur-2) ease,transform var(--dur-2) var(--ease-glide);}
+.tm-wopt.sel{color:var(--amber);transform:scale(1.14);}
+/* Relleno para que el primero y el último puedan quedar centrados */
+.tm-wpad{flex:0 0 auto;height:calc(var(--tm-item) * (var(--tm-rows) - 1) / 2);
+  scroll-snap-align:none;pointer-events:none;}
+
+/* Mientras se elige, la cifra del dial se pinta en ámbar */
+.tm-time.editing{color:var(--amber);}
+@media (prefers-reduced-motion:reduce){
+  .tm-wheels.open{animation:none;}
+  .tm-wopt{transition:none;}
+  .tm-wlist{scroll-behavior:auto;}
+}
+
+/* Selector de sonido: misma caja punteada que el de las alarmas. */
+.tm-sound{margin:0 auto 24px;max-width:340px;cursor:pointer;
+  transition:border-color var(--dur-2) ease,background-color var(--dur-2) ease;}
+.tm-sound:hover{border-color:var(--brass);background:rgba(40,27,10,0.5);}
+.tm-sound .sound-name{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.tm-sound-clear{flex-shrink:0;width:32px;height:32px;border-radius:10px;border:none;padding:0;cursor:pointer;
+  background:rgba(224,92,92,0.1);color:#e8736e;
+  display:inline-flex;align-items:center;justify-content:center;
+  transition:background-color var(--dur-2) ease,color var(--dur-2) ease;}
+.tm-sound-clear:hover{background:rgba(224,92,92,0.2);color:#f08a84;}
+.tm-sound-clear.hidden{display:none;}
+
+/* Mientras suena, el botón de reiniciar deja de ser secundario: es el que
+   corta el timbre, así que crece al tamaño del principal, se tiñe de rojo
+   y late al mismo ritmo que el dial. Es lo primero que uno busca tocar. */
+.sw-btn-stop.ringing{width:78px;height:78px;background:rgba(224,92,92,0.9);
+  border-color:transparent;color:#2a0a0a;
+  box-shadow:0 8px 24px rgba(224,92,92,0.35);
+  animation:tmRing 1.1s ease-in-out infinite;}
+@media (prefers-reduced-motion:reduce){.sw-btn-stop.ringing{animation:none;}}
+
+/* Cuando el temporizador llega a cero el dial late hasta que lo silencies */
+.sw-circle-wrap.tm-ringing .sw-circle{animation:tmRing 1.1s ease-in-out infinite;}
+@keyframes tmRing{
+  0%,100%{box-shadow:inset 0 2px 24px rgba(0,0,0,0.5),0 0 0 0 rgba(224,92,92,0);}
+  50%{box-shadow:inset 0 2px 24px rgba(0,0,0,0.5),0 0 34px 6px rgba(224,92,92,0.35);}
+}
+@media (prefers-reduced-motion:reduce){
+  .sw-pill,.tm-arc-fg{transition:none;}
+  .sw-circle-wrap.tm-ringing .sw-circle{animation:none;}
+  .sw-pane.active{animation:none;}
+}
+
+/* ══════════════════════════════════════════════════════════════════
  //  SW-ENGINE — Motor del cronómetro (port de "Chronos Engine")
  //  Tres engranajes girando, un núcleo que late y chispas que salen en
  //  tangente. Todo en la paleta de la casa (latón y ámbar), detrás de la
@@ -1651,7 +1839,8 @@ img,svg,video{max-width:100%;}
 }
 /* Fuera de la pestaña del cronómetro no hay nada que animar */
 #page-stopwatch{overflow-x:hidden;}
-#page-stopwatch:not(.active) .sw-engine :where(.sw-core,.sw-gear-svg,.sw-spark){animation-play-state:paused;}
+#page-stopwatch:not(.active) .sw-engine :where(.sw-core,.sw-gear-svg,.sw-spark),
+.sw-pane:not(.active) .sw-engine :where(.sw-core,.sw-gear-svg,.sw-spark){animation-play-state:paused;}
 @media (prefers-reduced-motion:reduce){
   .sw-core,.sw-gear-svg,.sw-spark{animation:none !important;}
   .sw-spark{opacity:0;}
@@ -1728,6 +1917,72 @@ img,svg,video{max-width:100%;}
 .swatch[aria-pressed="true"]::after{content:"";position:absolute;left:50%;top:46%;width:7px;height:12px;
   border:solid rgba(20,10,0,0.85);border-width:0 2.5px 2.5px 0;transform:translate(-50%,-50%) rotate(45deg);}
 @media (prefers-reduced-motion:reduce){.exp-bar span,.swatch{transition:none;}}
+
+/* Variación: deliberadamente más chica y tenue que el nombre. Es un dato
+   opcional y no debe competir por la atención con el ejercicio en sí. */
+.gym-ex-variant{width:100%;border-radius:10px;margin-bottom:12px;
+  background:rgba(255,255,255,0.02);border:1px dashed rgba(216,178,90,0.18);
+  color:var(--muted);font-size:13px;font-weight:500;padding:9px 12px;font-family:inherit;
+  transition:border-color .2s,color .2s,background .2s;}
+.gym-ex-variant:focus{outline:none;border-style:solid;border-color:rgba(216,178,90,0.5);
+  background:rgba(255,255,255,0.04);color:var(--ink);}
+.gym-ex-variant::placeholder{color:rgba(200,170,120,0.38);}
+/* Con contenido deja de verse como un campo vacío a completar */
+.gym-ex-variant:not(:placeholder-shown){border-style:solid;color:var(--ink);
+  border-color:rgba(216,178,90,0.3);}
+
+/* Botones ± del peso. Mismo tamaño táctil que los del contador de series,
+   y flex:0 0 auto para que nunca le roben ancho al número. */
+.gym-w-step{flex:0 0 auto;width:38px;height:38px;border-radius:50%;
+  border:1px solid rgba(216,178,90,0.28);background:rgba(255,255,255,0.04);
+  color:var(--gym-gold-text,var(--amber));font-size:19px;line-height:1;cursor:pointer;
+  display:flex;align-items:center;justify-content:center;
+  touch-action:manipulation;user-select:none;
+  transition:background-color var(--dur-2) ease;}
+.gym-w-step:hover{background:rgba(216,178,90,0.14);}
+
+/* ── Armario: ficha de prenda ─────────────────────────────────────
+   Alta y edición comparten hoja. Un solo formulario en vez de dos
+   pantallas distintas: menos código y el usuario aprende una sola vez
+   dónde se cambia el color. */
+.aw-detail{max-height:88dvh;overflow-y:auto;}
+.aw-detail-top{display:flex;gap:14px;margin-bottom:16px;}
+.aw-detail-thumb{flex:0 0 84px;width:84px;height:112px;border-radius:12px;overflow:hidden;
+  background:rgba(30,20,8,0.5);border:1px solid var(--line);}
+.aw-detail-thumb img{width:100%;height:100%;object-fit:cover;display:block;}
+.aw-detail-fields{flex:1;min-width:0;display:flex;flex-direction:column;}
+.aw-flabel{font-size:12px;font-weight:600;color:var(--muted);margin-bottom:6px;}
+.aw-flabel + .aw-input{margin-bottom:12px;}
+.aw-input{width:100%;border-radius:11px;border:1px solid var(--line);background:rgba(10,5,0,0.4);
+  color:var(--ink);font-size:14px;padding:10px 12px;font-family:inherit;}
+.aw-input:focus{outline:none;border-color:var(--brass);}
+.aw-select{appearance:none;-webkit-appearance:none;cursor:pointer;
+  background-image:linear-gradient(45deg,transparent 50%,var(--brass) 50%),
+                   linear-gradient(135deg,var(--brass) 50%,transparent 50%);
+  background-position:calc(100% - 17px) 50%,calc(100% - 12px) 50%;
+  background-size:5px 5px,5px 5px;background-repeat:no-repeat;padding-right:32px;}
+.aw-color-head{margin-bottom:9px;}
+.aw-color-head span{color:var(--ink);text-transform:capitalize;}
+.aw-colors{display:grid;grid-template-columns:repeat(7,1fr);gap:9px;justify-items:center;margin-bottom:10px;}
+.aw-sw{position:relative;width:clamp(28px,8vw,34px);height:clamp(28px,8vw,34px);border-radius:50%;
+  border:none;padding:0;cursor:pointer;background:var(--c);
+  box-shadow:inset 0 0 0 1px rgba(255,255,255,0.16);
+  transition:transform var(--dur-1) var(--ease-spring),box-shadow var(--dur-2) ease;}
+.aw-sw:hover{transform:scale(1.08);}
+.aw-sw[aria-pressed="true"]{box-shadow:0 0 0 2px #140d05,0 0 0 4px var(--amber);}
+.aw-sw[aria-pressed="true"]::after{content:"";position:absolute;left:50%;top:46%;width:7px;height:12px;
+  border:solid var(--chk,rgba(20,10,0,0.85));border-width:0 2.5px 2.5px 0;
+  transform:translate(-50%,-50%) rotate(45deg);}
+.aw-color-hint{font-size:11.5px;line-height:1.5;color:var(--faint);margin:0 0 16px;text-align:center;}
+.aw-detail-btns{display:flex;gap:10px;}
+.aw-detail-del{display:flex;align-items:center;justify-content:center;gap:7px;width:100%;margin-top:10px;
+  border:none;background:none;color:rgba(224,120,100,0.8);font-size:13px;font-weight:600;
+  padding:10px;cursor:pointer;border-radius:11px;transition:background-color var(--dur-2) ease;}
+.aw-detail-del:hover{background:rgba(224,92,92,0.1);}
+.aw-detail-del.hidden{display:none;}
+/* La tarjeta entera abre la ficha; el aspa sigue borrando directo. */
+.aw-card{cursor:pointer;}
+@media (prefers-reduced-motion:reduce){.aw-sw{transition:none;}}
 
 /* ══════════════════════════════════════════════════════════════════
  //  CALENDARIO — Agenda con rango (port de MeetingScheduler)
@@ -2013,29 +2268,93 @@ img,svg,video{max-width:100%;}
     </div>
   </div>
 
-  <!-- CRONÓMETRO -->
+  <!-- CRONÓMETRO Y TEMPORIZADOR -->
+  <!-- Una sola pestaña con dos herramientas de tiempo, separadas por un
+       segmented control igual al de Gym (Rutina / Cargas). Comparten dial,
+       motor de engranajes y botonera: lo único que cambia es qué módulo JS
+       manda sobre ellos (Chrono o Timer). Cada panel tiene su propio
+       .sw-circle-wrap porque el motor vive dentro del dial; los engranajes
+       del panel oculto se pausan solos vía CSS (#sw-pane-x:not(.active)). -->
   <div class="page" id="page-stopwatch">
     <div class="sw-title-row">
-      <div class="sw-title">Cronómetro</div>
-    </div>
-    <div class="sw-circle-wrap">
-      <!-- Motor: núcleo + tres engranajes + chispas (ver "SW-ENGINE") -->
-      <div class="sw-engine" id="swEngine" aria-hidden="true">
-        <span class="sw-core"></span>
-        <span class="sw-rim"><svg class="sw-gear-svg" viewBox="-104 -104 208 208"><path d="M-4.01 -91.91L-2.44 -99.97L2.44 -99.97L4.01 -91.91L12.01 -91.21L14.95 -98.88L19.77 -98.03L19.91 -89.82L27.66 -87.74L31.90 -94.78L36.49 -93.11L35.21 -85.00L42.48 -81.60L47.87 -87.80L52.10 -85.36L49.43 -77.59L56.01 -72.99L62.39 -78.15L66.13 -75.01L62.15 -67.83L67.83 -62.15L75.01 -66.13L78.15 -62.39L72.99 -56.01L77.59 -49.43L85.36 -52.10L87.80 -47.87L81.60 -42.48L85.00 -35.21L93.11 -36.49L94.78 -31.90L87.74 -27.66L89.82 -19.91L98.03 -19.77L98.88 -14.95L91.21 -12.01L91.91 -4.01L99.97 -2.44L99.97 2.44L91.91 4.01L91.21 12.01L98.88 14.95L98.03 19.77L89.82 19.91L87.74 27.66L94.78 31.90L93.11 36.49L85.00 35.21L81.60 42.48L87.80 47.87L85.36 52.10L77.59 49.43L72.99 56.01L78.15 62.39L75.01 66.13L67.83 62.15L62.15 67.83L66.13 75.01L62.39 78.15L56.01 72.99L49.43 77.59L52.10 85.36L47.87 87.80L42.48 81.60L35.21 85.00L36.49 93.11L31.90 94.78L27.66 87.74L19.91 89.82L19.77 98.03L14.95 98.88L12.01 91.21L4.01 91.91L2.44 99.97L-2.44 99.97L-4.01 91.91L-12.01 91.21L-14.95 98.88L-19.77 98.03L-19.91 89.82L-27.66 87.74L-31.90 94.78L-36.49 93.11L-35.21 85.00L-42.48 81.60L-47.87 87.80L-52.10 85.36L-49.43 77.59L-56.01 72.99L-62.39 78.15L-66.13 75.01L-62.15 67.83L-67.83 62.15L-75.01 66.13L-78.15 62.39L-72.99 56.01L-77.59 49.43L-85.36 52.10L-87.80 47.87L-81.60 42.48L-85.00 35.21L-93.11 36.49L-94.78 31.90L-87.74 27.66L-89.82 19.91L-98.03 19.77L-98.88 14.95L-91.21 12.01L-91.91 4.01L-99.97 2.44L-99.97 -2.44L-91.91 -4.01L-91.21 -12.01L-98.88 -14.95L-98.03 -19.77L-89.82 -19.91L-87.74 -27.66L-94.78 -31.90L-93.11 -36.49L-85.00 -35.21L-81.60 -42.48L-87.80 -47.87L-85.36 -52.10L-77.59 -49.43L-72.99 -56.01L-78.15 -62.39L-75.01 -66.13L-67.83 -62.15L-62.15 -67.83L-66.13 -75.01L-62.39 -78.15L-56.01 -72.99L-49.43 -77.59L-52.10 -85.36L-47.87 -87.80L-42.48 -81.60L-35.21 -85.00L-36.49 -93.11L-31.90 -94.78L-27.66 -87.74L-19.91 -89.82L-19.77 -98.03L-14.95 -98.88L-12.01 -91.21Z"/><circle cx="0" cy="0" r="86"/></svg></span>
-        <span class="sw-sparks" id="swSparks"></span>
+      <div class="sw-title">Tiempo</div>
+      <div class="sw-subtabs" role="tablist" aria-label="Herramientas de tiempo">
+        <span class="sw-pill" id="swPill" aria-hidden="true"></span>
+        <button class="sw-subtab active" role="tab" aria-selected="true" data-sub="chrono"
+                onclick="swSwitchSub('chrono')">Cronómetro</button>
+        <button class="sw-subtab" role="tab" aria-selected="false" data-sub="timer"
+                onclick="swSwitchSub('timer')">Temporizador</button>
       </div>
-      <div class="sw-circle">
-        <div class="sw-time" id="swTime">00:00</div>
-        <div class="sw-ms" id="swMs">.00</div>
+    </div>
+
+    <!-- ── Cronómetro: cuenta hacia arriba, guarda vueltas ── -->
+    <section class="sw-pane active" id="sw-pane-chrono">
+      <div class="sw-circle-wrap">
+        <div class="sw-engine" data-engine aria-hidden="true"></div>
+        <div class="sw-circle">
+          <div class="sw-time" id="swTime">00:00</div>
+          <div class="sw-ms" id="swMs">.00</div>
+        </div>
+        <div class="sw-ring" id="swRing"></div>
       </div>
-      <div class="sw-ring" id="swRing"></div>
-    </div>
-    <div class="sw-controls">
-      <button class="sw-btn sw-btn-stop" id="swStopBtn" onclick="swStop()" disabled aria-label="Reiniciar"></button>
-      <button class="sw-btn sw-btn-start" id="swStartBtn" onclick="swToggle()" aria-label="Iniciar"></button>
-    </div>
-    <div class="sw-laps stagger" id="swLaps"></div>
+      <div class="sw-controls">
+        <button class="sw-btn sw-btn-stop" id="swStopBtn" onclick="swStop()" disabled
+                aria-label="Reiniciar" data-icon="refresh" data-icon-size="24"></button>
+        <button class="sw-btn sw-btn-start" id="swStartBtn" onclick="swToggle()"
+                aria-label="Iniciar" data-icon="play" data-icon-size="30"></button>
+      </div>
+      <div class="sw-laps stagger" id="swLaps"></div>
+    </section>
+
+    <!-- ── Temporizador: cuenta hacia atrás y suena al llegar a cero ── -->
+    <section class="sw-pane" id="sw-pane-timer">
+      <div class="sw-circle-wrap">
+        <!-- data-engine="progress" agrega al aro dentado una segunda copia
+             de su propio trazo, en ámbar, que se va dibujando con el tiempo.
+             Antes esto era un círculo aparte (.tm-arc) más el arco del
+             cronómetro (.sw-ring): dos elementos encimados que no eran
+             concéntricos con el engranaje — el de progreso quedaba 8px
+             corrido a la izquierda y ni siquiera era cuadrado. Poniendo el
+             progreso sobre el propio engranaje no hay nada que alinear:
+             es el mismo trazo. -->
+        <div class="sw-engine" data-engine="progress" aria-hidden="true"></div>
+        <div class="sw-circle">
+          <button class="sw-time tm-time" id="tmTime" onclick="tmWheelToggle()"
+                  aria-label="Duración: tocá para cambiarla">05:00</button>
+          <div class="sw-ms tm-state" id="tmState">listo</div>
+        </div>
+      </div>
+
+      <!-- La duración se escribe a mano. No hay atajos de duración fija a
+           propósito: seis botones nunca aciertan el tiempo que necesitás.
+           En su lugar hay dos ruedas deslizables, minutos y segundos, que
+           dejan el dial siempre a la vista y no llaman al teclado del
+           sistema (que tapa media pantalla y tarda en abrirse). -->
+      <p class="tm-hint" id="tmHint">Tocá el número para poner el tiempo</p>
+
+      <div class="tm-wheels" id="tmWheels" role="group" aria-label="Duración" hidden></div>
+
+      <div class="sw-controls">
+        <button class="sw-btn sw-btn-stop" id="tmStopBtn" onclick="tmReset()" disabled
+                aria-label="Reiniciar" data-icon="refresh" data-icon-size="24"></button>
+        <button class="sw-btn sw-btn-start" id="tmStartBtn" onclick="tmToggle()"
+                aria-label="Iniciar" data-icon="play" data-icon-size="30"></button>
+      </div>
+
+      <!-- Sonido del temporizador. Mismo trato que el de las alarmas: podés
+           poner tu propio archivo. Si no ponés ninguno, suena el timbre
+           sintetizado de la casa, que no depende de nada. -->
+      <div class="sound-area tm-sound" id="tmSoundBox" role="button" tabindex="0"
+           onclick="tmOpenSoundPicker()"
+           onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();tmOpenSoundPicker();}">
+        <span class="sound-icon" id="tmSoundIcon" data-icon="music" data-icon-size="22"></span>
+        <span class="sound-name" id="tmSoundName">Timbre de Vesta</span>
+        <button class="tm-sound-clear hidden" id="tmSoundClear" onclick="tmClearSound(event)"
+                aria-label="Volver al timbre de Vesta" data-icon="trash" data-icon-size="15"></button>
+      </div>
+      <input type="file" id="tmFile" accept="audio/*,video/mp4,video/quicktime,video/x-matroska,.mp4,.mov,.mkv,.m4a,.aac"
+             onchange="tmPickSound(event)" style="display:none;position:absolute;width:0;height:0;opacity:0;">
+    </section>
   </div>
 
   <!-- PRESUPUESTO -->
@@ -2229,6 +2548,41 @@ img,svg,video{max-width:100%;}
           <button class="aw-sheet-opt" onclick="awPickFile('acc','acc')"><span class="ic" data-icon="watch"></span>Accesorios</button>
         </div>
       </div>
+      <!-- Ficha de prenda: se abre después de elegir la foto (alta) y al
+           tocar una tarjeta de la librería (edición). Es el único lugar
+           donde se define el color, que es lo que usa el generador de
+           outfits para decidir qué combina con qué. -->
+      <div class="aw-sheet-ov" id="awDetailOv" onclick="if(event.target===this)awDetailClose()">
+        <div class="aw-sheet aw-detail">
+          <div class="aw-sheet-grip"></div>
+          <div class="aw-sheet-title" id="awDetailTitle">Nueva prenda</div>
+
+          <div class="aw-detail-top">
+            <div class="aw-detail-thumb" id="awDetailThumb"></div>
+            <div class="aw-detail-fields">
+              <label class="aw-flabel" for="awDetailName">Nombre</label>
+              <input class="aw-input" id="awDetailName" type="text" maxlength="40"
+                     placeholder="Ej: Camisa de lino" autocomplete="off">
+              <label class="aw-flabel" for="awDetailLayer">Capa</label>
+              <select class="aw-input aw-select" id="awDetailLayer"></select>
+            </div>
+          </div>
+
+          <div class="aw-flabel aw-color-head">
+            Color · <span id="awDetailColorName">gris</span>
+          </div>
+          <div class="aw-colors" id="awDetailColors" role="group" aria-label="Color de la prenda"></div>
+          <p class="aw-color-hint">El color decide con qué otras prendas se combina.
+            Los neutros (negro, blanco, gris) van con todo.</p>
+
+          <div class="aw-detail-btns">
+            <button class="aw-btn ghost" onclick="awDetailClose()">Cancelar</button>
+            <button class="aw-btn solid" onclick="awDetailSave()">Guardar</button>
+          </div>
+          <button class="aw-detail-del" id="awDetailDel" onclick="awDetailDelete()"
+                  data-icon="trash" data-icon-size="15">Eliminar prenda</button>
+        </div>
+      </div>
     </div>
   </div>
 
@@ -2288,7 +2642,7 @@ img,svg,video{max-width:100%;}
       <span class="tab-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="13" r="8"/><path d="M12 9v4l2.5 2.5"/><path d="M6.3 4.3 4.2 6.4"/><path d="M17.7 4.3l2.1 2.1"/><path d="M9 2h6"/></svg></span>Alarmas
     </button>
     <button class="tab-btn" id="tab-stopwatch" onclick="switchTab('stopwatch')">
-      <span class="tab-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="14" r="8"/><path d="M12 10v4"/><path d="M9 2h6"/><path d="M12 2v2"/><path d="M19.4 6.6 18 8"/></svg></span>Cronómetro
+      <span class="tab-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="14" r="8"/><path d="M12 10v4"/><path d="M9 2h6"/><path d="M12 2v2"/><path d="M19.4 6.6 18 8"/></svg></span>Tiempo
     </button>
     <button class="tab-btn" id="tab-registro" onclick="switchTab('registro')">
       <span class="tab-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="6" width="20" height="12" rx="2.5"/><circle cx="12" cy="12" r="2.5"/><path d="M5.5 9.5h.01"/><path d="M18.5 14.5h.01"/></svg></span>Presupuesto
@@ -2977,9 +3331,17 @@ function startWatching(){
 // Una PWA solo puede sonar con fiabilidad si la pantalla no se apaga, porque al
 // bloquearse el navegador congela los timers y el audio. Esto la mantiene viva.
 let wakeLock=null;
+// Una sola pregunta para las dos razones por las que Vesta necesita la
+// pantalla despierta. Si mañana se suma una tercera, se agrega acá y no
+// en los dos lugares que la consultan.
+function swNeedsWakeLock(){
+  return alarms.some(a=>a.active) || (typeof tmRunning!=='undefined' && tmRunning);
+}
 async function requestWakeLock(){
   try{
-    if('wakeLock' in navigator && document.visibilityState==='visible' && alarms.some(a=>a.active)){
+    // Lo piden tanto las alarmas activas como el temporizador en marcha:
+    // si la pantalla se apaga, el navegador puede congelar la pestaña.
+    if('wakeLock' in navigator && document.visibilityState==='visible' && swNeedsWakeLock()){
       if(wakeLock)return;
       wakeLock=await navigator.wakeLock.request('screen');
       wakeLock.addEventListener('release',()=>{wakeLock=null;});
@@ -2987,7 +3349,7 @@ async function requestWakeLock(){
   }catch(e){}
 }
 async function releaseWakeLockIfIdle(){
-  if(wakeLock && !alarms.some(a=>a.active)){
+  if(wakeLock && !swNeedsWakeLock()){
     try{await wakeLock.release();}catch(e){}
     wakeLock=null;
   }
@@ -2996,7 +3358,132 @@ document.addEventListener('visibilitychange',()=>{
   if(document.visibilityState==='visible')requestWakeLock();
 });
 
-// ── 5) CRONÓMETRO ─────────────────────────────────────────────────────
+// ══════════════════════════════════════════════════════════════════
+// 5) TIEMPO — Cronómetro y Temporizador
+// ──────────────────────────────────────────────────────────────────
+// Los dos comparten pestaña, dial y motor de engranajes; lo único que
+// cambia es qué módulo manda. El archivo está ordenado así:
+//   5.0) Motor (SwEngine)   → engranajes y chispas, uno por dial
+//   5.1) Sub-pestañas       → alternar Cronómetro ↔ Temporizador
+//   5.2) Cronómetro         → cuenta hacia arriba, vueltas
+//   5.3) Temporizador       → cuenta atrás, aro de progreso y timbre
+// ══════════════════════════════════════════════════════════════════
+
+// ── 5.0) MOTOR DEL DIAL (SwEngine) ───────────────────────────────────
+// Port del "Chronos Engine" a JS nativo. El aro dentado y las chispas se
+// construyen acá y no en el HTML por dos razones prácticas:
+//   1. El trazo del engranaje son ~1.900 caracteres; repetirlo por cada
+//      dial ensucia el HTML y duplica bytes en cada carga.
+//   2. Las chispas dependen del tamaño real del dial, que solo se conoce
+//      en tiempo de ejecución (cambia al rotar el teléfono).
+// Cada contenedor con [data-engine] recibe su propia copia y su propio
+// ResizeObserver. El CSS pausa las animaciones del panel que no está
+// visible, así que dos diales no cuestan el doble de trabajo.
+const SwEngine=(()=>{
+  const RIM_PATH='M-4.01 -91.91L-2.44 -99.97L2.44 -99.97L4.01 -91.91L12.01 -91.21L14.95 -98.88L19.77 -98.03L19.91 -89.82L27.66 -87.74L31.90 -94.78L36.49 -93.11L35.21 -85.00L42.48 -81.60L47.87 -87.80L52.10 -85.36L49.43 -77.59L56.01 -72.99L62.39 -78.15L66.13 -75.01L62.15 -67.83L67.83 -62.15L75.01 -66.13L78.15 -62.39L72.99 -56.01L77.59 -49.43L85.36 -52.10L87.80 -47.87L81.60 -42.48L85.00 -35.21L93.11 -36.49L94.78 -31.90L87.74 -27.66L89.82 -19.91L98.03 -19.77L98.88 -14.95L91.21 -12.01L91.91 -4.01L99.97 -2.44L99.97 2.44L91.91 4.01L91.21 12.01L98.88 14.95L98.03 19.77L89.82 19.91L87.74 27.66L94.78 31.90L93.11 36.49L85.00 35.21L81.60 42.48L87.80 47.87L85.36 52.10L77.59 49.43L72.99 56.01L78.15 62.39L75.01 66.13L67.83 62.15L62.15 67.83L66.13 75.01L62.39 78.15L56.01 72.99L49.43 77.59L52.10 85.36L47.87 87.80L42.48 81.60L35.21 85.00L36.49 93.11L31.90 94.78L27.66 87.74L19.91 89.82L19.77 98.03L14.95 98.88L12.01 91.21L4.01 91.91L2.44 99.97L-2.44 99.97L-4.01 91.91L-12.01 91.21L-14.95 98.88L-19.77 98.03L-19.91 89.82L-27.66 87.74L-31.90 94.78L-36.49 93.11L-35.21 85.00L-42.48 81.60L-47.87 87.80L-52.10 85.36L-49.43 77.59L-56.01 72.99L-62.39 78.15L-66.13 75.01L-62.15 67.83L-67.83 62.15L-75.01 66.13L-78.15 62.39L-72.99 56.01L-77.59 49.43L-85.36 52.10L-87.80 47.87L-81.60 42.48L-85.00 35.21L-93.11 36.49L-94.78 31.90L-87.74 27.66L-89.82 19.91L-98.03 19.77L-98.88 14.95L-91.21 12.01L-91.91 4.01L-99.97 2.44L-99.97 -2.44L-91.91 -4.01L-91.21 -12.01L-98.88 -14.95L-98.03 -19.77L-89.82 -19.91L-87.74 -27.66L-94.78 -31.90L-93.11 -36.49L-85.00 -35.21L-81.60 -42.48L-87.80 -47.87L-85.36 -52.10L-77.59 -49.43L-72.99 -56.01L-78.15 -62.39L-75.01 -66.13L-67.83 -62.15L-62.15 -67.83L-66.13 -75.01L-62.39 -78.15L-56.01 -72.99L-49.43 -77.59L-52.10 -85.36L-47.87 -87.80L-42.48 -81.60L-35.21 -85.00L-36.49 -93.11L-31.90 -94.78L-27.66 -87.74L-19.91 -89.82L-19.77 -98.03L-14.95 -98.88L-12.01 -91.21Z';
+  // Dos anillos de chispas: k es el radio como fracción del ancho del motor.
+  const RINGS=[{k:0.44,n:14,d:[2,5]},{k:0.30,n:10,d:[1.6,3.6]}];
+  const rnd=(a,b)=>Math.random()*(b-a)+a;
+  const engines=[];
+
+  function build(host){
+    if(!host||host.dataset.built)return;
+    host.dataset.built='1';
+    // Variante "progress": el mismo trazo del engranaje se dibuja dos veces,
+    // uno tenue de fondo y otro ámbar encima que actúa de indicador. Van en
+    // el MISMO <svg> a propósito: comparten la rotación, así que las puntas
+    // de los dientes siempre coinciden. pathLength="1" normaliza el largo
+    // del trazo, y entonces stroke-dashoffset se puede escribir como la
+    // fracción de tiempo restante, sin medir nada.
+    const gauge=host.dataset.engine==='progress';
+    host.innerHTML=
+      '<span class="sw-core"></span>'+
+      '<span class="sw-rim'+(gauge?' gauge':'')+'">'+
+        '<svg class="sw-gear-svg" viewBox="-104 -104 208 208">'+
+          '<path class="sw-gear-base" d="'+RIM_PATH+'"/><circle cx="0" cy="0" r="86"/>'+
+          (gauge?'<path class="sw-rim-fill" pathLength="1" d="'+RIM_PATH+'"/>':'')+
+        '</svg></span>'+
+      '<span class="sw-sparks"></span>';
+    const sparks=host.querySelector('.sw-sparks');
+    const frag=document.createDocumentFragment();
+    RINGS.forEach(g=>{
+      for(let i=0;i<g.n;i++){
+        // Cada chispa nace en un punto al azar del borde y sale en tangente.
+        const a=rnd(0,Math.PI*2),s=document.createElement('span');
+        s.className='sw-spark';
+        s.dataset.k=g.k;s.dataset.a=a;
+        s.dataset.fx=(-Math.sin(a)*rnd(.5,1.5)).toFixed(3);
+        s.dataset.fy=(Math.cos(a)*rnd(.5,1.5)).toFixed(3);
+        s.style.animationDuration=rnd(g.d[0],g.d[1]).toFixed(2)+'s';
+        // Delay negativo: cada chispa arranca a mitad de su ciclo, así no
+        // salen todas juntas en el primer cuadro.
+        s.style.animationDelay=(-rnd(0,4)).toFixed(2)+'s';
+        frag.appendChild(s);
+      }
+    });
+    sparks.appendChild(frag);
+    const wrap=host.closest('.sw-circle-wrap');
+    const entry={host,sparks,wrap};
+    engines.push(entry);
+    size(entry);
+    if(wrap&&'ResizeObserver' in window)new ResizeObserver(()=>size(entry)).observe(wrap);
+  }
+
+  // Traduce los ángulos guardados a píxeles según el tamaño actual del dial.
+  function size(e){
+    if(!e.wrap)return;
+    const px=e.wrap.clientWidth*1.28;   // el motor mide 128% del dial
+    if(!px)return;
+    e.sparks.querySelectorAll('.sw-spark').forEach(s=>{
+      const r=px*parseFloat(s.dataset.k),a=parseFloat(s.dataset.a);
+      const sx=Math.cos(a)*r,sy=Math.sin(a)*r;
+      s.style.setProperty('--sx',sx.toFixed(1));
+      s.style.setProperty('--sy',sy.toFixed(1));
+      s.style.setProperty('--tx',(sx+sy*parseFloat(s.dataset.fx)*-1).toFixed(1));
+      s.style.setProperty('--ty',(sy+sx*parseFloat(s.dataset.fy)).toFixed(1));
+    });
+  }
+
+  return {
+    init(){document.querySelectorAll('[data-engine]').forEach(build);},
+    /* Acelera o frena el motor del panel indicado ('chrono' | 'timer') */
+    run(pane,on){
+      const host=document.querySelector('#sw-pane-'+pane+' [data-engine]');
+      if(host)host.classList.toggle('running',!!on);
+    },
+    resize(){engines.forEach(size);}
+  };
+})();
+SwEngine.init();
+
+
+// ── 5.1) SUB-PESTAÑAS (Cronómetro ↔ Temporizador) ────────────────────
+// Solo alterna clases: los dos paneles quedan en el DOM para que ninguno
+// de los dos relojes se interrumpa al cambiar de vista (podés arrancar el
+// temporizador, pasarte al cronómetro y el temporizador sigue corriendo).
+let swSub='chrono';
+function swSwitchSub(sub){
+  if(sub===swSub)return;
+  swSub=sub;
+  document.querySelectorAll('#page-stopwatch .sw-subtab').forEach(b=>{
+    const on=b.dataset.sub===sub;
+    b.classList.toggle('active',on);
+    b.setAttribute('aria-selected',String(on));
+  });
+  document.getElementById('swPill').classList.toggle('right',sub==='timer');
+  document.getElementById('sw-pane-chrono').classList.toggle('active',sub==='chrono');
+  document.getElementById('sw-pane-timer').classList.toggle('active',sub==='timer');
+  try{localStorage.setItem('bat_sw_sub',sub);}catch(e){}
+  // El dial que acaba de aparecer tenía ancho 0 mientras estaba oculto,
+  // así que sus chispas quedaron sin posición: se recalculan ahora.
+  requestAnimationFrame(()=>SwEngine.resize());
+}
+
+
+// ── 5.2) CRONÓMETRO ──────────────────────────────────────────────────
+// El tiempo se calcula siempre contra performance.now(), nunca sumando
+// ticks: si el navegador ralentiza el rAF en segundo plano, al volver la
+// cifra sigue siendo exacta en vez de haberse quedado atrás.
 let swRunning=false,swStart=0,swElapsed=0,swRaf=null,swLaps=[],_swLastMain='';
 function swFmt(ms){
   const totalSec=Math.floor(ms/1000);
@@ -3005,61 +3492,12 @@ function swFmt(ms){
 function swTick(){
   const total=swElapsed+(performance.now()-swStart);
   const f=swFmt(total);
+  // Los minutos y segundos solo se escriben cuando cambian: tocar el DOM
+  // 60 veces por segundo para repintar el mismo texto es trabajo tirado.
   if(f.main!==_swLastMain){EL.swTime.textContent=f.main;_swLastMain=f.main;}
   EL.swMs.textContent=f.ms;
   if(swRunning)swRaf=requestAnimationFrame(swTick);
 }
-// ── Motor del cronómetro: chispas ─────────────────────────────────────
-// Port del emisor de chispas de Chronos Engine. Cada chispa nace en un
-// punto del borde de un engranaje y sale en tangente. Se crean una sola
-// vez (24 en total) y el CSS las anima solo cuando el cronómetro corre.
-function swBuildSparks(){
-  const host=document.getElementById('swSparks');
-  if(!host||host.childElementCount)return;
-  const rnd=(a,b)=>Math.random()*(b-a)+a;
-  const frag=document.createDocumentFragment();
-  // Dos anillos de chispas: el del aro dentado y uno interno
-  [{k:0.44,n:14,d:[2,5]},{k:0.30,n:10,d:[1.6,3.6]}].forEach(g=>{
-    for(let i=0;i<g.n;i++){
-      const a=rnd(0,Math.PI*2),s=document.createElement('span');
-      s.className='sw-spark';
-      s.dataset.k=g.k;s.dataset.a=a;
-      s.dataset.fx=(-Math.sin(a)*rnd(.5,1.5)).toFixed(3);
-      s.dataset.fy=(Math.cos(a)*rnd(.5,1.5)).toFixed(3);
-      s.style.animationDuration=rnd(g.d[0],g.d[1]).toFixed(2)+'s';
-      s.style.animationDelay=(-rnd(0,4)).toFixed(2)+'s';
-      frag.appendChild(s);
-    }
-  });
-  host.appendChild(frag);
-  swSizeSparks();
-  // El motor escala con la pantalla, así que las chispas se recalculan
-  // cuando cambia el tamaño de la esfera (rotar el teléfono, redimensionar).
-  const wrap=document.querySelector('.sw-circle-wrap');
-  if(wrap&&'ResizeObserver' in window)new ResizeObserver(swSizeSparks).observe(wrap);
-}
-// Convierte los ángulos guardados en píxeles según el tamaño actual
-function swSizeSparks(){
-  const wrap=document.querySelector('.sw-circle-wrap');
-  if(!wrap)return;
-  const size=wrap.clientWidth*1.28;  // el motor mide 128% de la esfera
-  if(!size)return;
-  document.querySelectorAll('#swSparks .sw-spark').forEach(s=>{
-    const r=size*parseFloat(s.dataset.k),a=parseFloat(s.dataset.a);
-    const sx=Math.cos(a)*r,sy=Math.sin(a)*r;
-    s.style.setProperty('--sx',sx.toFixed(1));
-    s.style.setProperty('--sy',sy.toFixed(1));
-    s.style.setProperty('--tx',(sx+sy*parseFloat(s.dataset.fx)*-1).toFixed(1));
-    s.style.setProperty('--ty',(sy+sx*parseFloat(s.dataset.fy)).toFixed(1));
-  });
-}
-
-function swEngineRunning(on){
-  const e=document.getElementById('swEngine');
-  if(e)e.classList.toggle('running',!!on);
-}
-swBuildSparks();
-
 function swToggle(){
   if(!swRunning){
     swRunning=true;swStart=performance.now();_swLastMain='';
@@ -3069,7 +3507,7 @@ function swToggle(){
     EL.swStopBtn.disabled=false;
     EL.swRing.classList.add('running');
     EL.swTime.classList.add('running');
-    swEngineRunning(true);
+    SwEngine.run('chrono',true);
     cancelAnimationFrame(swRaf);
     swRaf=requestAnimationFrame(swTick);
   }else{
@@ -3080,7 +3518,7 @@ function swToggle(){
     EL.swStartBtn.classList.remove('running');
     EL.swRing.classList.remove('running');
     EL.swTime.classList.remove('running');
-    swEngineRunning(false);
+    SwEngine.run('chrono',false);
     const f=swFmt(swElapsed);
     swLaps.unshift({num:swLaps.length+1,time:f.main+f.ms});
     renderLaps();
@@ -3096,12 +3534,508 @@ function swStop(){
   EL.swStopBtn.disabled=true;
   EL.swRing.classList.remove('running');
   EL.swTime.classList.remove('running');
-  swEngineRunning(false);
+  SwEngine.run('chrono',false);
   swLaps=[];renderLaps();
 }
 function renderLaps(){
   document.getElementById('swLaps').innerHTML=swLaps.map(l=>`<div class="sw-lap"><span class="sw-lap-num">Vuelta ${l.num}</span><span class="sw-lap-time">${l.time}</span></div>`).join('');
 }
+
+
+// ── 5.3) TEMPORIZADOR ────────────────────────────────────────────────
+// Misma interfaz que el cronómetro, al revés: elegís una duración y el
+// dial se vacía hasta cero, donde suena un timbre hasta que lo pares.
+//
+// Tres decisiones que vale la pena explicar:
+//
+//  1. FECHA LÍMITE, NO CONTADOR. Mientras corre guardamos el instante en
+//     que debe terminar (tmDeadline) y cada cuadro restamos. Contar ticks
+//     acumularía error, y peor: en segundo plano el navegador ralentiza
+//     el rAF hasta 1 vez por minuto, así que un contador se atrasaría
+//     minutos. Con fecha límite, al volver a la pestaña la cifra ya es la
+//     correcta sin hacer nada.
+//
+//  2. DOBLE DISPARO. El fin del tiempo se agenda además con un setTimeout
+//     que sobrevive a la pestaña en segundo plano (el rAF no). El que
+//     llegue primero gana; tmFire() es idempotente.
+//
+//  3. AUDIO DESBLOQUEADO EN EL GESTO. iOS solo deja sonar audio si el
+//     AudioContext se creó o reanudó dentro de un toque del usuario. Por
+//     eso el contexto se prepara al tocar "Iniciar", no al llegar a cero:
+//     en ese momento ya no hay gesto y el navegador lo bloquearía.
+const TM_MAX=99*60+59;                        // el dial muestra MM:SS
+let tmTotal=300;        // duración elegida, en segundos
+let tmRemain=300000;    // lo que falta, en ms
+let tmDeadline=0;       // instante (performance.now) en que llega a cero
+let tmRunning=false,tmRaf=null,tmTimeout=null,tmRinging=false,tmLastTxt='';
+
+function tmFmt(ms){
+  const t=Math.max(0,Math.ceil(ms/1000));
+  return pad(Math.floor(t/60))+':'+pad(t%60);
+}
+// Pinta cifra, aro y estado. Es la ÚNICA función que escribe en el DOM del
+// temporizador: si algo se ve mal, se arregla acá y no en cinco lugares.
+function tmPaint(){
+  // Eligiendo se muestra lo que marcan las ruedas; si no, lo que queda.
+  const txt=tmWheelOn?tmFmt((tmWheelVal.m*60+tmWheelVal.s)*1000):tmFmt(tmRemain);
+  if(txt!==tmLastTxt){document.getElementById('tmTime').textContent=txt;tmLastTxt=txt;}
+  // La aguja es el trazo del engranaje con pathLength="1": el desfase es
+  // directamente la fracción de tiempo ya consumida, sin medir nada.
+  // Eligiendo, el aro queda lleno: todavía no hay cuenta que mostrar.
+  const frac=tmWheelOn?1:(tmTotal>0?Math.max(0,Math.min(1,tmRemain/(tmTotal*1000))):0);
+  const arc=document.querySelector('#sw-pane-timer .sw-rim-fill');
+  if(arc){
+    arc.style.strokeDashoffset=(1-frac).toFixed(4);
+    arc.classList.toggle('warn',!tmRinging&&frac<=0.2&&frac>0);
+    arc.classList.toggle('over',tmRinging);
+  }
+  // La pista solo tiene sentido con el reloj detenido: mientras corre o
+  // suena, tocar la cifra no hace nada.
+  const hint=document.getElementById('tmHint');
+  if(hint)hint.classList.toggle('hidden',tmRunning||tmRinging||tmWheelOn);
+  const st=document.getElementById('tmState');
+  if(st){
+    st.textContent=tmWheelOn?'elegí la duración':tmRinging?'¡listo!':tmRunning?'en marcha':'listo';
+    st.classList.toggle('run',(tmRunning&&!tmRinging)||tmWheelOn);
+    st.classList.toggle('done',tmRinging);
+  }
+  // Reiniciar queda disponible si hay algo que cortar o que volver atrás.
+  const stop=document.getElementById('tmStopBtn');
+  if(stop){
+    stop.disabled=!tmRunning&&!tmRinging&&tmRemain===tmTotal*1000;
+    stop.classList.toggle('ringing',tmRinging);
+    stop.setAttribute('aria-label',tmRinging?'Silenciar y reiniciar':'Reiniciar');
+    stop.title=tmRinging?'Silenciar':'Reiniciar';
+  }
+}
+function tmSetTotal(sec){
+  if(tmRunning)return;                       // con el reloj andando no se cambia
+  tmSilence();
+  tmTotal=Math.max(1,Math.min(TM_MAX,Math.round(sec)));
+  tmRemain=tmTotal*1000;
+  try{localStorage.setItem('bat_tm_total',String(tmTotal));}catch(e){}
+  tmPaint();
+}
+// ── Ruedas de duración ───────────────────────────────────────────────
+// Dos columnas deslizables, minutos y segundos, como el temporizador de
+// un teléfono. Decisiones que vale la pena dejar por escrito:
+//
+//  1. SCROLL NATIVO, NO ARRASTRE A MANO. Las columnas son divs con
+//     overflow y scroll-snap. Seguir el dedo con pointermove y simular
+//     inercia a mano se siente mal en cuanto el teléfono se pone
+//     exigente; el scroll del sistema ya trae inercia, rebote y la
+//     velocidad que el usuario espera de su propio aparato.
+//
+//  2. EL JS SOLO LEE. Calcula qué fila quedó en el centro dividiendo
+//     scrollTop entre el alto de fila. No hay estado paralelo que se
+//     pueda desincronizar del scroll real.
+//
+//  3. SE CONFIRMA SOLO. El valor se aplica al asentarse la columna
+//     (120 ms sin movimiento), y la cifra grande se actualiza en vivo
+//     mientras girás. Lo que ves es lo que queda: no hay un "aceptar"
+//     que se pueda olvidar.
+const TM_WHEEL=[
+  {key:'m',label:'Min',max:99},
+  {key:'s',label:'Seg',max:59}
+];
+let tmWheelOn=false;          // ¿están abiertas?
+let tmWheelVal={m:5,s:0};     // valor que muestran ahora mismo
+// El "ocupado" (mientras una columna se mueve por código) se guarda en la
+// propia columna, no en una variable global: con una sola, terminar de
+// animar una columna desbloqueaba también a la otra, que seguía en
+// movimiento, y su valor quedaba sin aplicar hasta cerrar las ruedas.
+
+function tmWheelBuild(){
+  const host=document.getElementById('tmWheels');
+  if(!host||host.childElementCount)return;
+  host.replaceChildren(...TM_WHEEL.map(col=>{
+    const wrap=document.createElement('div');wrap.className='tm-wcol';
+    const lab=document.createElement('div');lab.className='tm-wlabel';lab.textContent=col.label;
+    const box=document.createElement('div');box.className='tm-wbox';
+    const list=document.createElement('div');
+    list.className='tm-wlist';list.dataset.key=col.key;list.tabIndex=0;
+    list.setAttribute('role','listbox');
+    list.setAttribute('aria-label',col.key==='m'?'Minutos':'Segundos');
+
+    const top=document.createElement('div');top.className='tm-wpad';
+    const bot=document.createElement('div');bot.className='tm-wpad';
+    const opts=[];
+    for(let i=0;i<=col.max;i++){
+      const o=document.createElement('div');
+      o.className='tm-wopt';o.dataset.v=i;o.setAttribute('role','option');
+      o.textContent=pad(i);
+      // Tocar una fila la trae al centro: más rápido que arrastrar cuando
+      // el valor que querés ya está a la vista.
+      o.addEventListener('click',()=>tmWheelScrollTo(list,i,true));
+      opts.push(o);
+    }
+    list.append(top,...opts,bot);
+    list.addEventListener('scroll',()=>tmWheelOnScroll(list));
+    list.addEventListener('keydown',e=>tmWheelKeydown(e,list,col.max));
+    box.append(list);wrap.append(lab,box);
+    return wrap;
+  }));
+}
+// Alto de fila leído del CSS: el valor vive en --tm-item y no duplicado acá.
+function tmWheelItemH(){
+  const host=document.getElementById('tmWheels');
+  const v=host?parseFloat(getComputedStyle(host).getPropertyValue('--tm-item')):0;
+  return v||38;
+}
+function tmWheelIndex(list){
+  return Math.max(0,Math.round(list.scrollTop/tmWheelItemH()));
+}
+function tmWheelScrollTo(list,i,smooth){
+  list._busy=true;
+  list.scrollTo({top:i*tmWheelItemH(),behavior:(smooth&&MOTION.ok)?'smooth':'auto'});
+  // El scroll suave sigue disparando eventos un rato; se libera después,
+  // y ahí se aplica el valor (si no, tocar una fila o usar las flechas
+  // cambiaba el número pero no la duración hasta cerrar).
+  clearTimeout(list._busyT);
+  list._busyT=setTimeout(()=>{
+    list._busy=false;
+    tmWheelMark(list);
+    if(!list._opening)tmWheelCommit();
+  },smooth?420:60);
+}
+// Resalta la fila centrada y actualiza el valor en vivo.
+function tmWheelMark(list){
+  const i=tmWheelIndex(list);
+  const opts=list.querySelectorAll('.tm-wopt');
+  const prev=list.querySelector('.tm-wopt.sel');
+  const now=opts[i];
+  if(prev!==now){
+    if(prev)prev.classList.remove('sel');
+    if(now){
+      now.classList.add('sel');
+      if(navigator.vibrate&&!list._busy){try{navigator.vibrate(5);}catch(e){}}
+    }
+  }
+  tmWheelVal[list.dataset.key]=i;
+  tmPaint();
+}
+function tmWheelOnScroll(list){
+  tmWheelMark(list);
+  // Se aplica al asentarse: escribir en disco en cada cuadro del scroll
+  // sería decenas de escrituras por gesto.
+  clearTimeout(list._settleT);
+  list._settleT=setTimeout(()=>{
+    if(list._busy)return;         // lo aplica el temporizador de _busyT
+    tmWheelCommit();
+  },120);
+}
+function tmWheelCommit(){
+  const sec=tmWheelVal.m*60+tmWheelVal.s;
+  if(sec>0&&sec!==tmTotal)tmSetTotal(sec);
+  else tmPaint();
+}
+// Flechas y teclado físico para quien no usa el dedo.
+function tmWheelKeydown(e,list,max){
+  const i=tmWheelIndex(list);
+  if(e.key==='ArrowUp'){e.preventDefault();tmWheelScrollTo(list,Math.max(0,i-1),true);}
+  else if(e.key==='ArrowDown'){e.preventDefault();tmWheelScrollTo(list,Math.min(max,i+1),true);}
+  else if(e.key==='Enter'||e.key==='Escape'){e.preventDefault();tmWheelClose();}
+}
+
+function tmWheelToggle(){
+  // Sonando, la cifra es un blanco enorme para cortar el timbre: sería
+  // absurdo que abriera las ruedas mientras el temporizador grita.
+  if(tmRinging){tmSilence();tmPaint();return;}
+  if(tmRunning)return;                      // con el reloj andando no se edita
+  if(tmWheelOn)tmWheelClose();else tmWheelOpen();
+}
+function tmWheelOpen(){
+  tmSilence();
+  tmWheelBuild();
+  tmWheelOn=true;
+  tmWheelVal={m:Math.floor(tmTotal/60),s:tmTotal%60};
+  const host=document.getElementById('tmWheels');
+  host.hidden=false;host.classList.add('open');
+  document.getElementById('sw-pane-timer').classList.add('editing');
+  document.getElementById('tmHint').classList.add('hidden');
+  document.getElementById('tmTime').classList.add('editing');
+  // Las columnas estaban ocultas y por lo tanto medían 0: hay que esperar
+  // al cuadro siguiente para poder posicionarlas donde corresponde.
+  requestAnimationFrame(()=>{
+    host.querySelectorAll('.tm-wlist').forEach(l=>{
+      l._opening=true;                       // colocar no es elegir
+      tmWheelScrollTo(l,tmWheelVal[l.dataset.key],false);
+      setTimeout(()=>{l._opening=false;},120);
+    });
+    // Si la botonera queda tapada, se desplaza la página lo justo. No sirve
+    // scrollIntoView acá: la barra de pestañas es position:fixed, así que el
+    // navegador la trata como si no ocupara lugar y concluye que el botón ya
+    // se ve. Hay que medir el solapamiento contra la barra a mano.
+    const page=document.getElementById('page-stopwatch');
+    const ctl=document.querySelector('#sw-pane-timer .sw-controls');
+    const tab=document.querySelector('.tab-bar');
+    if(!page||!ctl||!tab)return;
+    const over=ctl.getBoundingClientRect().bottom-tab.getBoundingClientRect().top+12;
+    if(over>0)page.scrollBy({top:over,behavior:MOTION.ok?'smooth':'auto'});
+  });
+  tmPaint();
+}
+function tmWheelClose(){
+  if(!tmWheelOn)return;
+  tmWheelCommit();                          // lo que se ve es lo que queda
+  tmWheelOn=false;
+  const host=document.getElementById('tmWheels');
+  host.hidden=true;host.classList.remove('open');
+  document.getElementById('sw-pane-timer').classList.remove('editing');
+  document.getElementById('tmTime').classList.remove('editing');
+  tmPaint();
+}
+
+function tmTick(){
+  tmRaf=null;
+  if(!tmRunning)return;
+  tmRemain=tmDeadline-performance.now();
+  if(tmRemain<=0){tmFire();return;}
+  tmPaint();
+  tmRaf=requestAnimationFrame(tmTick);
+}
+// Agenda el disparo por reloj del sistema, como respaldo del rAF.
+function tmSchedule(){
+  clearTimeout(tmTimeout);
+  tmTimeout=setTimeout(()=>{if(tmRunning)tmFire();},Math.max(0,tmDeadline-performance.now()));
+}
+function tmToggle(){
+  tmSilence();
+  // Dar a Iniciar con las ruedas abiertas las cierra aplicando lo elegido.
+  if(tmWheelOn)tmWheelClose();
+  if(!tmRunning){
+    if(tmRemain<=0)tmRemain=tmTotal*1000;
+    tmUnlockAudio();                          // ver decisión 3 arriba
+    tmEnsureMedia();                          // y el archivo propio, si lo hay
+    tmRunning=true;
+    tmDeadline=performance.now()+tmRemain;
+    tmSchedule();
+    document.getElementById('tmStartBtn').innerHTML=ICON.pause(30);
+    document.getElementById('tmStartBtn').setAttribute('aria-label','Pausar');
+    document.getElementById('tmStartBtn').classList.add('running');
+    SwEngine.run('timer',true);
+    requestWakeLock();
+    cancelAnimationFrame(tmRaf);
+    tmRaf=requestAnimationFrame(tmTick);
+  }else{
+    tmRunning=false;
+    tmRemain=Math.max(0,tmDeadline-performance.now());
+    cancelAnimationFrame(tmRaf);tmRaf=null;
+    clearTimeout(tmTimeout);tmTimeout=null;
+    document.getElementById('tmStartBtn').innerHTML=ICON.play(30);
+    document.getElementById('tmStartBtn').setAttribute('aria-label','Continuar');
+    document.getElementById('tmStartBtn').classList.remove('running');
+    SwEngine.run('timer',false);
+    releaseWakeLockIfIdle();
+  }
+  tmPaint();
+}
+function tmReset(){
+  tmSilence();
+  if(tmWheelOn)tmWheelClose();
+  tmRunning=false;
+  cancelAnimationFrame(tmRaf);tmRaf=null;
+  clearTimeout(tmTimeout);tmTimeout=null;
+  tmRemain=tmTotal*1000;tmLastTxt='';
+  document.getElementById('tmStartBtn').innerHTML=ICON.play(30);
+  document.getElementById('tmStartBtn').setAttribute('aria-label','Iniciar');
+  document.getElementById('tmStartBtn').classList.remove('running');
+  SwEngine.run('timer',false);
+  releaseWakeLockIfIdle();
+  tmPaint();
+}
+// Llegó a cero. Idempotente a propósito: la puede llamar el rAF o el
+// setTimeout de respaldo, y solo la primera hace efecto.
+function tmFire(){
+  if(!tmRunning)return;
+  tmRunning=false;tmRinging=true;tmRemain=0;tmLastTxt='';
+  cancelAnimationFrame(tmRaf);tmRaf=null;
+  clearTimeout(tmTimeout);tmTimeout=null;
+  document.getElementById('tmStartBtn').innerHTML=ICON.play(30);
+  document.getElementById('tmStartBtn').setAttribute('aria-label','Iniciar');
+  document.getElementById('tmStartBtn').classList.remove('running');
+  document.querySelector('#sw-pane-timer .sw-circle-wrap').classList.add('tm-ringing');
+  SwEngine.run('timer',false);
+  tmStartChime();
+  if(navigator.vibrate){try{navigator.vibrate([300,150,300,150,500]);}catch(e){}}
+  showBanner('Se acabó el tiempo',6000,'alarm');
+  // Si la app quedó en segundo plano, el aviso del sistema es lo único
+  // que el usuario va a ver.
+  if(document.visibilityState!=='visible'&&typeof Notification!=='undefined'&&Notification.permission==='granted'){
+    try{showAppNotification('Vesta — Temporizador',{body:'Se acabó el tiempo',icon:'./icon-192.png',tag:'timer',requireInteraction:true});}catch(e){}
+  }
+  tmPaint();
+}
+// Corta el timbre y deja el dial quieto. La llaman los tres botones.
+// El mecanismo de fondo NO se toca desde acá: Mech vive en el motor de
+// movimiento y se engancha con wrapAfter (buscá "wrapAfter('tmFire'").
+function tmSilence(){
+  if(!tmRinging)return;
+  tmRinging=false;
+  tmStopChime();
+  const w=document.querySelector('#sw-pane-timer .sw-circle-wrap');
+  if(w)w.classList.remove('tm-ringing');
+}
+
+/* ── Sonido del temporizador ───────────────────────────────────────
+   Por defecto suena un timbre sintetizado (más abajo). Igual que en las
+   alarmas, podés poner tu propio archivo; a diferencia de las alarmas,
+   que guardan el audio en localStorage, acá va a IndexedDB: localStorage
+   escribe de forma síncrona y tiene un tope de pocos MB, y un audio en
+   Base64 lo llena enseguida.
+   El elemento multimedia se crea una sola vez y se "bendice" (reproducir
+   y pausar en silencio) dentro del toque de Iniciar, porque iOS no deja
+   reproducir nada que no haya empezado en un gesto del usuario — y al
+   llegar a cero ya no hay gesto. */
+let tmSound=null;      // {name, url} del archivo elegido, o null
+let tmMedia=null;      // <audio>/<video> reutilizado
+
+function tmSoundLabel(){
+  const n=document.getElementById('tmSoundName');
+  const clear=document.getElementById('tmSoundClear');
+  const ic=document.getElementById('tmSoundIcon');
+  if(!n)return;
+  n.textContent=tmSound?tmSound.name:'Timbre de Vesta';
+  n.classList.toggle('loaded',!!tmSound);
+  if(clear)clear.classList.toggle('hidden',!tmSound);
+  if(ic&&typeof ICON!=='undefined')ic.innerHTML=(tmSound&&isVideoSource(tmSound.url))?ICON.video(22):ICON.music(22);
+}
+function tmOpenSoundPicker(){
+  const f=document.getElementById('tmFile');
+  if(f){f.value='';f.click();}
+}
+function tmPickSound(e){
+  const f=e.target.files&&e.target.files[0];
+  if(!f)return;
+  const r=new FileReader();
+  r.onload=ev=>{
+    tmSound={name:f.name,url:ev.target.result};
+    tmMedia=null;                       // el elemento viejo apuntaba al audio anterior
+    idbSet('bat_tm_sound',tmSound);
+    tmSoundLabel();
+    tmEnsureMedia();                    // se prepara ya, todavía dentro del gesto
+    showBanner('Sonido del temporizador actualizado',3000,'ok');
+    if(/\.mkv$/i.test(f.name))showBanner('MKV puede no reproducirse en todos los dispositivos',3000,'info');
+  };
+  r.readAsDataURL(f);
+}
+function tmClearSound(ev){
+  if(ev){ev.stopPropagation();ev.preventDefault();}
+  tmStopChime();
+  tmSound=null;
+  if(tmMedia&&tmMedia.parentNode)tmMedia.parentNode.removeChild(tmMedia);
+  tmMedia=null;
+  idbDel('bat_tm_sound');
+  tmSoundLabel();
+  showBanner('Vuelve el timbre de Vesta',3000,'info');
+}
+// Igual que ensureAlarmMedia: el <video> tiene que estar en el DOM y visible
+// (1px, no display:none) o iOS se niega a reproducirlo.
+function tmEnsureMedia(){
+  if(!tmSound)return null;
+  if(tmMedia)return tmMedia;
+  if(isVideoSource(tmSound.url)){
+    tmMedia=document.createElement('video');
+    tmMedia.setAttribute('playsinline','');tmMedia.playsInline=true;
+    tmMedia.style.cssText='position:fixed;left:0;bottom:0;width:1px;height:1px;opacity:0.01;pointer-events:none;z-index:-1;';
+    document.body.appendChild(tmMedia);
+  }else{
+    tmMedia=document.createElement('audio');
+  }
+  tmMedia.loop=true;tmMedia.preload='auto';tmMedia.volume=1.0;
+  tmMedia.src=tmSound.url;
+  blessMedia(tmMedia);
+  return tmMedia;
+}
+
+/* ── Timbre sintetizado (Web Audio) ────────────────────────────────
+   Se genera por síntesis en vez de usar un archivo: no hay nada que
+   descargar, no depende de decodificadores y no puede fallar por un
+   audio corrupto. Son tres notas descendentes (La-Fa-Re) repetidas cada
+   1,6 s, deliberadamente distintas del "beep" plano de las alarmas para
+   que se distingan de oído sin mirar la pantalla. */
+let tmCtx=null,tmChimeTimer=null;
+function tmUnlockAudio(){
+  try{
+    tmCtx=tmCtx||new(window.AudioContext||window.webkitAudioContext)();
+    if(tmCtx.state==='suspended')tmCtx.resume().catch(()=>{});
+  }catch(e){}
+}
+function tmChime(){
+  if(!tmCtx)return;
+  const now=tmCtx.currentTime;
+  [880,698.46,587.33].forEach((hz,i)=>{
+    try{
+      const o=tmCtx.createOscillator(),g=tmCtx.createGain();
+      o.type='triangle';o.frequency.value=hz;
+      const t=now+i*0.22;
+      g.gain.setValueAtTime(0.0001,t);
+      g.gain.exponentialRampToValueAtTime(0.35,t+0.02);
+      g.gain.exponentialRampToValueAtTime(0.0001,t+0.42);
+      o.connect(g).connect(tmCtx.destination);
+      o.start(t);o.stop(t+0.44);
+    }catch(e){}
+  });
+}
+function tmStartChime(){
+  // Con archivo propio: se reproduce en bucle y no se sintetiza nada.
+  if(tmSound){
+    const el=tmEnsureMedia();
+    if(el){
+      try{
+        el.currentTime=0;
+        const pr=el.play();
+        // Si el navegador bloquea la reproducción (permiso perdido, formato
+        // que no soporta), cae al timbre sintetizado: el temporizador nunca
+        // queda mudo.
+        if(pr&&pr.catch)pr.catch(()=>tmStartSynthChime());
+      }catch(e){tmStartSynthChime();}
+      setTimeout(tmStopChime,120000);
+      return;
+    }
+  }
+  tmStartSynthChime();
+}
+function tmStartSynthChime(){
+  if(tmChimeTimer)return;
+  tmUnlockAudio();
+  tmChime();
+  tmChimeTimer=setInterval(tmChime,1600);
+  // Red de seguridad: si nadie lo silencia, para solo a los 2 minutos en
+  // vez de sonar para siempre con el teléfono en un bolso.
+  setTimeout(tmStopChime,120000);
+}
+function tmStopChime(){
+  if(tmChimeTimer){clearInterval(tmChimeTimer);tmChimeTimer=null;}
+  if(tmMedia){try{tmMedia.pause();tmMedia.currentTime=0;}catch(e){}}
+}
+
+// Al volver a la pestaña la cuenta se recalcula contra el reloj real: si
+// el navegador congeló el rAF, acá se pone al día (o dispara si ya pasó).
+document.addEventListener('visibilitychange',()=>{
+  if(document.visibilityState!=='visible'||!tmRunning)return;
+  tmRemain=tmDeadline-performance.now();
+  if(tmRemain<=0){tmFire();return;}
+  tmPaint();
+  if(!tmRaf)tmRaf=requestAnimationFrame(tmTick);
+});
+
+// ── Arranque del módulo ──────────────────────────────────────────────
+(function tmInit(){
+  tmWheelBuild();
+  idbGet('bat_tm_sound',null).then(v=>{
+    if(v&&v.url)tmSound=v;
+    tmSoundLabel();
+  }).catch(()=>tmSoundLabel());
+  try{
+    const saved=parseInt(localStorage.getItem('bat_tm_total'),10);
+    if(saved>0&&saved<=TM_MAX){tmTotal=saved;tmRemain=saved*1000;}
+    const sub=localStorage.getItem('bat_sw_sub');
+    if(sub==='timer')swSwitchSub('timer');
+  }catch(e){}
+  tmPaint();
+})();
+
 
 // ── 6) PRESUPUESTO ("Registro") ──────────────────────────────────────
 let salary=null;
@@ -3822,6 +4756,7 @@ renderAlarms();startWatching();renderBudgetFields();renderCalendar();
 //   5) Sub-pestañas               → alternar Librería ↔ Armario
 //   6) Librería: filtros y grid   → catálogo de prendas
 //  6b) Librería: muro derivante   → fotos en columnas 3D que se deslizan (AwWall)
+//  7b) Ficha de prenda          → nombre, capa y color (alta y edición)
 //   7) Librería: agregar prenda   → subir foto nueva
 //   8) Lookbook                   → dibuja el carrusel de opciones generadas
 //                                    (solo las combinaciones, sin etiquetas ni títulos)
@@ -3872,6 +4807,15 @@ const AW_OPTIONS_PER_BATCH=4;
 
 // Etiquetas cortas para cada capa del outfit estructurado (lookbook y guardados).
 const AW_SLOT_LABELS={base:'Base',outer:'Capa Ext.',bottom:'Inferior',shoes:'Calzado',acc:'Accesorio'};
+
+
+// Escapa el nombre que escribe el usuario. Va en texto y en atributos
+// (aria-label), por eso incluye las comillas además de & y <.
+function awEsc(t){
+  return String(t==null?'':t)
+    .replace(/&/g,'&amp;').replace(/</g,'&lt;')
+    .replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+}
 
 
 // ── 2) UTILIDADES DE IMAGEN ──────────────────────────────────────────
@@ -4067,12 +5011,15 @@ function awRenderGrid(){
   const items=awItems.filter(it=>awFilter==='all'||it.cat===awFilter);
   AwWall.render(items);
   if(!items.length){g.innerHTML=`<div class="aw-empty">No hay prendas en esta categoría.<br>Tocá <b>+</b> para agregar.</div>`;return;}
+  // La tarjeta entera es el botón de editar; el aspa borra sin preguntar.
   g.innerHTML=items.map(it=>`
-    <div class="aw-card">
-      <button class="aw-card-del" onclick="awDeleteItem('${it.id}',event)" aria-label="Eliminar">×</button>
+    <div class="aw-card" role="button" tabindex="0" aria-label="Editar ${awEsc(it.name)}"
+         onclick="awEditItem('${it.id}')"
+         onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();awEditItem('${it.id}');}">
+      <button class="aw-card-del" onclick="awDeleteItem('${it.id}',event)" aria-label="Eliminar ${awEsc(it.name)}">×</button>
       ${awImg(it)}
       <div class="aw-card-foot">
-        <div class="aw-card-name">${it.name}</div>
+        <div class="aw-card-name">${awEsc(it.name)}</div>
         <div class="aw-card-cat">${(AW_CATMAP[it.cat]||{}).label||''}${it.color?' · '+it.color:''}</div>
       </div>
     </div>`).join('');
@@ -4286,20 +5233,144 @@ function awPickFile(cat,category){
     const file=inp.files[0];
     if(file){
       const r=new FileReader();
-      r.onload=e=>{
-        const co=AW_CATMAP[cat];
-        const cat2=category||cat;
-        // Color por defecto 'gris' (neutro): combina con cualquier otra prenda
-        // hasta que el usuario lo reclasifique manualmente editando la prenda.
-        awItems.unshift({id:'u'+Date.now(),cat,category:cat2,name:co.short+' propio',src:e.target.result,color:'gris',tone:'#9c7a54'});
-        awFilter='all';awRenderFilters();awRenderGrid();awPersist();
-        showBanner('Prenda agregada a '+co.label,3000,'ok');
-      };
+      // La foto no se guarda sola: abre la ficha para que el usuario ponga
+      // nombre y, sobre todo, color — sin color el generador no puede
+      // combinar nada (ver sección 7b).
+      r.onload=e=>awDetailOpen({
+        cat,category:category||cat,
+        name:'',src:e.target.result,
+        color:'gris',tone:'#8b8b90'
+      },true);
       r.readAsDataURL(file);
     }
     if(inp.parentNode)document.body.removeChild(inp);
   };
   document.body.appendChild(inp);inp.click();
+}
+
+// ── 7b) FICHA DE PRENDA (alta y edición) ─────────────────────────────
+// Antes, una prenda subida quedaba para siempre como "Superior propio"
+// con color 'gris'. Eso no era solo cosmético: el generador usa el color
+// para decidir qué combina con qué (sección 3), y 'gris' es neutro, o sea
+// comodín. Con todo en gris la teoría del color quedaba desactivada de
+// hecho. Esta ficha es la que arregla eso: pide nombre, capa y color en
+// el momento de subir la foto, y permite corregirlos después.
+
+// Muestras de color de la paleta de ropa. El hex es solo para el botón;
+// lo que manda en el algoritmo es la CLAVE (ver AW_COLOR_HUE).
+const AW_SWATCHES=[
+  {key:'negro',   hex:'#1c1c1e', chk:'rgba(240,230,210,.9)'},
+  {key:'gris',    hex:'#8b8b90'},
+  {key:'blanco',  hex:'#f1ece1'},
+  {key:'beige',   hex:'#d9c08e'},
+  {key:'marrón',  hex:'#8a5a33'},
+  {key:'vino',    hex:'#7b2038'},
+  {key:'rojo',    hex:'#d33b3b'},
+  {key:'naranja', hex:'#e07a25'},
+  {key:'amarillo',hex:'#e8c53a'},
+  {key:'verde',   hex:'#3f9b52'},
+  {key:'turquesa',hex:'#2aa9a2'},
+  {key:'azul',    hex:'#3a6fc4'},
+  {key:'morado',  hex:'#7d55c7'},
+  {key:'rosa',    hex:'#dd77a8'}
+];
+// Capas del outfit. 'top' es la única categoría con dos capas posibles,
+// y confundirlas es el error más común al subir ropa.
+const AW_LAYERS={
+  top:[{v:'base',t:'Base (camiseta / camisa)'},{v:'outer',t:'Capa externa (blazer / abrigo)'}],
+  bottom:[{v:'bottom',t:'Parte inferior'}],
+  shoes:[{v:'shoes',t:'Calzado'}],
+  acc:[{v:'acc',t:'Accesorio'}]
+};
+
+let awDetailDraft=null;   // prenda en edición: {id?, cat, category, name, src, color}
+
+function awDetailOpen(draft,isNew){
+  awDetailDraft=Object.assign({},draft);
+  document.getElementById('awDetailTitle').textContent=isNew?'Nueva prenda':'Editar prenda';
+  document.getElementById('awDetailDel').classList.toggle('hidden',!!isNew);
+
+  const thumb=document.getElementById('awDetailThumb');
+  thumb.innerHTML=awDetailDraft.src?'<img alt="">':'';
+  if(awDetailDraft.src)thumb.querySelector('img').src=awDetailDraft.src;
+
+  const name=document.getElementById('awDetailName');
+  name.value=awDetailDraft.name||'';
+  name.placeholder='Ej: '+((AW_CATMAP[awDetailDraft.cat]||{}).short||'Prenda');
+
+  const layer=document.getElementById('awDetailLayer');
+  const opts=AW_LAYERS[awDetailDraft.cat]||AW_LAYERS.top;
+  layer.replaceChildren(...opts.map(o=>{
+    const el=document.createElement('option');
+    el.value=o.v;el.textContent=o.t;
+    el.selected=o.v===awDetailDraft.category;
+    return el;
+  }));
+  layer.disabled=opts.length<2;   // sin alternativa real, no se ofrece elegir
+
+  awDetailPaintColors();
+  document.getElementById('awDetailOv').classList.add('open');
+  // El foco al nombre solo en alta: al editar, mover el teclado encima de
+  // la ficha tapa justo los colores, que es lo que se viene a cambiar.
+  if(isNew)setTimeout(()=>name.focus(),220);
+}
+function awDetailPaintColors(){
+  const host=document.getElementById('awDetailColors');
+  host.replaceChildren(...AW_SWATCHES.map(c=>{
+    const b=document.createElement('button');
+    b.type='button';b.className='aw-sw';b.dataset.key=c.key;
+    b.style.setProperty('--c',c.hex);
+    if(c.chk)b.style.setProperty('--chk',c.chk);
+    b.title=c.key;b.setAttribute('aria-label',c.key);
+    b.setAttribute('aria-pressed',String(c.key===awDetailDraft.color));
+    b.addEventListener('click',()=>awDetailSetColor(c.key,c.hex));
+    return b;
+  }));
+  document.getElementById('awDetailColorName').textContent=awDetailDraft.color||'gris';
+}
+function awDetailSetColor(key,hex){
+  awDetailDraft.color=key;
+  awDetailDraft.tone=hex;
+  document.querySelectorAll('#awDetailColors .aw-sw').forEach(b=>
+    b.setAttribute('aria-pressed',String(b.dataset.key===key)));
+  document.getElementById('awDetailColorName').textContent=key;
+}
+function awDetailClose(){
+  document.getElementById('awDetailOv').classList.remove('open');
+  awDetailDraft=null;
+}
+function awDetailSave(){
+  if(!awDetailDraft)return;
+  const d=awDetailDraft;
+  d.name=(document.getElementById('awDetailName').value||'').trim()
+         || ((AW_CATMAP[d.cat]||{}).short||'Prenda');
+  d.category=document.getElementById('awDetailLayer').value||d.category;
+  const existing=d.id?awItems.find(it=>it.id===d.id):null;
+  if(existing){
+    Object.assign(existing,{name:d.name,category:d.category,color:d.color,tone:d.tone});
+    showBanner('Prenda actualizada',3000,'ok');
+  }else{
+    d.id='u'+Date.now();
+    awItems.unshift(d);
+    awFilter='all';awRenderFilters();
+    showBanner('Prenda agregada a '+((AW_CATMAP[d.cat]||{}).label||''),3000,'ok');
+  }
+  // Cambió el color o la capa: los outfits ya generados usan las reglas
+  // viejas, así que se descartan para no mostrar combinaciones inválidas.
+  awOutfitOptions=[];awOutfit=null;
+  awDetailClose();
+  awRenderGrid();awRenderLook();awPersist();
+}
+function awDetailDelete(){
+  if(!awDetailDraft||!awDetailDraft.id)return;
+  const id=awDetailDraft.id;
+  awDetailClose();
+  awDeleteItem(id);
+}
+// Abre la ficha de una prenda ya guardada (tocar su tarjeta).
+function awEditItem(id){
+  const it=awItems.find(x=>x.id===id);
+  if(it)awDetailOpen(it,false);
 }
 
 
@@ -4386,6 +5457,7 @@ awLoad().then(()=>{
 // Índice de este módulo (mismo patrón que el Armario Inteligente):
 //   1) Estado y configuración   → datos en memoria + abreviaturas de día
 //   2) Utilidades               → helpers chicos que usa todo el módulo
+//  2b) Altas sin duplicados     → no apilar filas vacías al tocar "+"
 //   3) Acordeón por día         → colapsar/expandir cada día de la rutina
 //   4) Sub-pestañas             → alternar Rutina ↔ Cargas
 //   5) Rutina                   → ejercicios diarios agrupados por día
@@ -4409,6 +5481,28 @@ function gymDefaultDay(){return new Date().getDay();}
 function gymId(){return 'gx'+Date.now()+Math.floor(Math.random()*1000);}
 function gymEsc(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;');}
 function gymTodayISO(){const d=new Date();return d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate());}
+
+
+// ── 2b) ALTAS SIN DUPLICADOS ─────────────────────────────────────────
+// Nota: acá vivía un <datalist> que sugería nombres de ejercicio mientras
+// escribías. Se quitó a pedido: el navegador lo dibuja como un desplegable
+// encima del campo y tapaba la fila que estabas editando. El campo es
+// texto libre a secas.
+// Si ya hay una fila en blanco, no se crea otra: se lleva el foco a esa.
+// Antes, dos toques seguidos al "+" dejaban dos filas vacías que después
+// había que borrar a mano (y el deduplicador las limpiaba recién al reiniciar).
+function gymFocusBlank(selector,fieldClass){
+  const rows=[...document.querySelectorAll(selector)];
+  for(const row of rows){
+    const inp=row.querySelector(fieldClass);
+    if(inp&&!inp.value.trim()){
+      inp.focus();
+      row.scrollIntoView({block:'nearest',behavior:MOTION.ok?'smooth':'auto'});
+      return true;
+    }
+  }
+  return false;
+}
 
 
 // ── 3) ACORDEÓN POR DÍA ───────────────────────────────────────────────
@@ -4458,13 +5552,22 @@ function gymRoutineRowHTML(ex){
     `<option value="${d}"${ex.day===d?' selected':''}>${GYM_DAY_ABBR[i]}</option>`).join('');
   return `<div class="gym-ex-row" data-id="${ex.id}">
     <div class="gym-ex-top">
-      <input class="gym-ex-name" type="text" placeholder="Nombre del ejercicio (ej. Tracciones de espalda)"
+      <input class="gym-ex-name" type="text" autocomplete="off"
+            placeholder="Nombre del ejercicio (ej. Tracciones de espalda)"
             value="${gymEsc(ex.name)}" maxlength="60" oninput="gymSetEx('${ex.id}','name',this.value)">
       <select class="gym-ex-day-select" onchange="gymSetExDay('${ex.id}',this.value)" aria-label="Día asignado">
         ${dayOptions}
       </select>
       <button class="gym-ex-del" onclick="gymDeleteExercise('${ex.id}')" aria-label="Eliminar ejercicio">${gymTrash()}</button>
     </div>
+    <!-- Variación: el mismo ejercicio cambia de estímulo según cómo se
+         haga (inclinado, con mancuernas, agarre cerrado…). Se guarda
+         aparte del nombre y no encima, para que "Press de banca" siga
+         siendo un solo ejercicio con tres variantes y no tres nombres
+         distintos — así el historial de cargas se mantiene comparable. -->
+    <input class="gym-ex-variant" type="text" autocomplete="off" maxlength="40"
+          placeholder="Variación (opcional) — ej. inclinado, con mancuernas"
+          value="${gymEsc(ex.variant||'')}" oninput="gymSetEx('${ex.id}','variant',this.value)">
     <div class="gym-ex-fields">
       <div class="gym-stepper">
         <span class="gym-stepper-label">Series</span>
@@ -4551,7 +5654,10 @@ function gymRefreshDays(...days){
 }
 function gymAddExercise(day){
   const d=(day===undefined||day===null||isNaN(day))?gymDefaultDay():Number(day);
-  const ex={id:gymId(),name:'',sets:3,reps:10,day:d};
+  // Ya hay una fila sin nombre en ese día: se reusa en vez de apilar otra.
+  const grp=document.querySelector('.gym-day-group[data-day="'+d+'"]');
+  if(grp&&gymFocusBlank('.gym-day-group[data-day="'+d+'"] .gym-ex-row','.gym-ex-name'))return;
+  const ex={id:gymId(),name:'',variant:'',sets:3,reps:10,day:d};
   gymRoutine.push(ex);
   if(gymCollapsedDays.delete(d))gymSaveCollapsedDays();   // si el día estaba cerrado, se abre
   gymRefreshDays(d);gymPersist('routine');
@@ -4567,7 +5673,7 @@ function gymSetExDay(id,val){
 }
 function gymSetEx(id,field,val){
   const ex=gymRoutine.find(e=>e.id===id);if(!ex)return;
-  if(field==='name'){ex.name=val;}
+  if(field==='name'||field==='variant'){ex[field]=val;}
   else{let n=parseInt(val,10);if(isNaN(n))n=0;if(n<0)n=0;ex[field]=n;}
   gymPersist('routine'); // sin re-render para no perder el foco mientras se escribe
 }
@@ -4594,15 +5700,20 @@ function gymLoadRowHTML(l){
   const w=(l.weight!==null&&l.weight!==undefined&&l.weight!=='')?l.weight:'';
   return `<div class="gym-load-row" data-id="${l.id}">
     <div class="gym-load-top">
-      <input class="gym-load-name" type="text" placeholder="Ejercicio (ej. Prensa, Jalones)"
+      <input class="gym-load-name" type="text" autocomplete="off"
+            placeholder="Ejercicio (ej. Prensa, Jalones)"
             value="${gymEsc(l.name)}" maxlength="60" oninput="gymSetLoad('${l.id}','name',this.value)">
       <button class="gym-load-del" onclick="gymDeleteLoad('${l.id}')" aria-label="Eliminar registro">${gymTrash()}</button>
     </div>
     <div class="gym-load-fields">
       <span class="gym-load-stat-kicker">PR Actual</span>
       <div class="gym-load-weight">
+        <!-- Los ± suben y bajan de a 2,5 (el disco más chico de casi todo
+             gimnasio). Escribir el número sigue disponible: es el mismo input. -->
+        <button class="gym-w-step" onclick="gymStepLoad('${l.id}',-2.5)" aria-label="Bajar 2,5">−</button>
         <input class="gym-load-w" type="number" min="0" step="0.5" inputmode="decimal" placeholder="0"
               value="${w}" oninput="gymSetLoad('${l.id}','weight',this.value)">
+        <button class="gym-w-step" onclick="gymStepLoad('${l.id}',2.5)" aria-label="Subir 2,5">+</button>
         <div class="gym-unit-toggle">
           <button class="gym-unit ${l.unit==='kg'?'active':''}" onclick="gymSetUnit('${l.id}','kg')">kg</button>
           <button class="gym-unit ${l.unit==='lbs'?'active':''}" onclick="gymSetUnit('${l.id}','lbs')">lbs</button>
@@ -4636,6 +5747,7 @@ function renderGymLoads(){
   list.innerHTML=gymSortedLoads().map(gymLoadRowHTML).join('');
 }
 function gymAddLoad(){
+  if(gymFocusBlank('#gymLoadsList .gym-load-row','.gym-load-name'))return;
   const l={id:gymId(),name:'',weight:'',unit:'kg',date:gymTodayISO()};
   gymLoads.push(l);
   renderGymLoads();gymPersist('loads');
@@ -4658,6 +5770,18 @@ function gymSetLoad(id,field,val){
     }
   }
   l[field]=val; // fecha en ISO y nombre tal cual; el peso ya quedó validado arriba
+  gymPersist('loads');
+}
+// Sube o baja el peso sin teclado. Redondea a 0,5 para no arrastrar
+// decimales raros después de convertir de kg a lbs y volver.
+function gymStepLoad(id,delta){
+  const l=gymLoads.find(x=>x.id===id);if(!l)return;
+  const base=parseFloat(l.weight);
+  let n=(isNaN(base)?0:base)+delta;
+  if(n<0)n=0;
+  l.weight=Math.round(n*2)/2;
+  const row=document.querySelector('.gym-load-row[data-id="'+id+'"]');
+  if(row){const wi=row.querySelector('.gym-load-w');if(wi)wi.value=l.weight;}
   gymPersist('loads');
 }
 function gymSetUnit(id,unit){
@@ -4718,7 +5842,8 @@ function gymDedupeRoutine(){
   const seen=new Set();
   const deduped=[];
   for(const ex of gymRoutine){
-    const key=(ex.name||'').trim().toLowerCase()+'|'+ex.sets+'|'+ex.reps+'|'+ex.day;
+    const key=(ex.name||'').trim().toLowerCase()+'|'+(ex.variant||'').trim().toLowerCase()
+              +'|'+ex.sets+'|'+ex.reps+'|'+ex.day;
     if(seen.has(key))continue;
     seen.add(key);
     deduped.push(ex);
@@ -5199,6 +6324,13 @@ async function showAppNotification(title, options) {
 
   // El mecanismo sigue a la app: corre con el cronómetro, se enciende
   // cuando algo se guarda, late cuando una alarma suena.
+  // El temporizador llegando a cero es una alerta, igual que una alarma
+  // sonando: el mecanismo se enciende y late hasta que se lo silencia.
+  wrapAfter('tmFire',()=>Mech.alert(true));
+  // Al silenciar, el mecanismo vuelve a reposo SALVO que además haya una
+  // alarma sonando; por eso se consulta el estado real en vez de apagarlo.
+  wrapAfter('tmSilence',()=>Mech.alert(!!document.querySelector('.alarm-card.ringing-card')));
+  ['tmToggle','tmReset'].forEach(n=>wrapAfter(n,()=>Mech.rest(tmRunning?5:1)));
   ['swToggle','swStop'].forEach(n=>wrapAfter(n,()=>{
     Mech.rest(document.getElementById('swTime').classList.contains('running')?5:1);
   }));
