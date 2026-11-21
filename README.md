@@ -65,7 +65,7 @@ GitHub Pages sirve la rama configurada. Con hacer commit y push alcanza.
 El `sw.js` usa estrategia *network-first* para el HTML, así que la versión nueva
 se ve en la siguiente carga, sin tener que borrar la caché a mano.
 Cada vez que cambie algo estructural, subí el número en `CACHE_NAME`
-(va en `vesta-cache-v3`).
+(va en `vesta-cache-v20`).
 
 ---
 
@@ -229,13 +229,33 @@ wrapAfter('miFuncion', () => Mech.burst(8, 850));
 
 ---
 
+## Fondo GridScan
+
+El fondo de la app es un túnel de cuadrícula en perspectiva con un haz de escaneo
+que lo recorre en profundidad: un port a JavaScript puro del componente *GridScan*
+de React Bits, sin three.js ni dependencias. Lo dibuja un solo shader de WebGL
+(buscá `9b) FONDO GRIDSCAN`).
+
+- Colores: líneas `#36523f` (verde bosque) y haz `#9ccfa6` (el acento de Vesta).
+- Todas las opciones del componente original están en el objeto `GRIDSCAN`.
+- Tocar la pantalla lanza una onda (`clickEffect:'ping'`) y en compu el túnel sigue
+  al mouse (`parallax`).
+- El haz acelera con el mismo motor que antes movía los engranajes: el cronómetro
+  corriendo, guardar algo o una alarma sonando.
+- Se dibuja a resolución reducida, se detiene con la app en segundo plano y queda
+  quieto con *reducir movimiento*. Sin WebGL, queda el fondo CSS de siempre.
+- Para volver a los engranajes, borrá la regla `#mech{display:none}` del CSS.
+
+---
+
 ## Privacidad
 
-Vesta no tiene servidores, ni cuentas, ni analítica. Eso es una promesa; el `<head>`
-tiene la prueba:
+Vesta no tiene servidores, ni cuentas, ni analítica. La única conexión es a
+[Open-Meteo](https://open-meteo.com) para el clima, con coordenadas redondeadas a ~1 km.
+El `<head>` tiene la prueba:
 
 ```
-connect-src 'none'   → ni fetch, ni XHR, ni WebSocket, ni beacon
+connect-src open-meteo → solo el clima; cualquier otra conexión se bloquea
 default-src 'self'   → nada de CDNs, fuentes o scripts externos
 form-action 'none'   → ningún formulario puede enviarse a ningún lado
 ```

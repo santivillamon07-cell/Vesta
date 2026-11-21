@@ -4,8 +4,8 @@
   "start_url": "./Vesta.html",
   "scope": "./",
   "display": "standalone",
-  "background_color": "#0a0500",
-  "theme_color": "#0a0500",
+  "background_color": "#08110c",
+  "theme_color": "#08110c",
   "orientation": "portrait",
   "icons": [
     {
