@@ -1071,7 +1071,11 @@ body.theme-light .reg-field-group{
    Referencia: Material. La onda nace donde tocaste, no en el centro,
    que es lo que hace que el botón se sienta físico. Solo en los botones
    grandes de acción: en los chiquitos ensucia más de lo que aporta. */
-.rippling{position:relative;overflow:hidden;}
+.rippling{overflow:hidden;}
+/* La onda necesita un contenedor posicionado, pero sin pisar a los botones
+   flotantes: el + del Armario es position:fixed y, si pasaba a relative,
+   saltaba al otro lado de la pantalla al tocarlo. */
+.rippling:not(.aw-fab){position:relative;}
 .ripple{
   position:absolute;border-radius:50%;pointer-events:none;
   transform:scale(0);opacity:.5;will-change:transform,opacity;
