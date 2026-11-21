@@ -13,7 +13,7 @@
 //      (más confiable en Android/Chrome que "new Notification()" directo).
 //   3) Que al tocar la notificación se enfoque/abra la app.
 
-const CACHE_NAME = 'vesta-cache-v21';
+const CACHE_NAME = 'vesta-cache-v22';
 const CORE_ASSETS = [
   './',
   './Vesta.html',

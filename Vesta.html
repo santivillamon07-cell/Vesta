@@ -6853,7 +6853,7 @@ async function showAppNotification(title, options) {
     glow:0.6,               // halo de las líneas
     parallax:1,             // el túnel sigue al mouse
     intro:true,             // aparece dibujándose de atrás hacia adelante
-    clickEffect:'ping'      // onda al tocar
+    clickEffect:'none'      // 'ping' = onda en el fondo al tocar (apagada)
   };
   const GridScan=(()=>{
     const cv=document.getElementById('gridScan');
@@ -7005,7 +7005,7 @@ void main(){
     return {
       // Velocidad del haz según el estado de la app (la marca Mech).
       rate(r){target=1+(Math.max(1,r)-1)*.35;if(MOTION.ok)kick();},
-      burst(){ping(innerWidth/2,innerHeight*.62);},
+      burst(){if(o.clickEffect==='ping')ping(innerWidth/2,innerHeight*.62);},
       alert(on){alertOn=on?1:0;},
       ping
     };
