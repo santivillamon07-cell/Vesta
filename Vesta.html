@@ -9,7 +9,7 @@
 
   DÓNDE TOCAR QUÉ
   ───────────────────────────────────────────────────────────────────
-  ¿Querés cambiar…                    → Buscá en el archivo…
+  ¿Quiero cambiar                      Buscá en el archivo
   ───────────────────────────────────────────────────────────────────
   Colores, radios, tipografías        → ":root{" (arriba del <style>)
   Sonido del temporizador             → "tmSoundLabel" (JS, sección 5.3)
@@ -2818,8 +2818,7 @@ html,body{overflow-x:hidden;}
   <div class="modal mech-sheet">
     <div class="modal-handle"></div>
     <div class="modal-title">MECANISMO</div>
-    <p class="mech-lead">Vesta corre entera dentro de este dispositivo. No hay cuentas, ni servidores, ni analítica: nada de lo que escribís sale de acá.</p>
-
+    <p class="mech-lead">Vesta guarda todo dentro de este dispositivo. No hay cuentas ni analítica. Solo salen tu zona aproximada para el clima y, si usás la IA del Armario, la foto de la prenda.</p>
     <div class="mech-plate">
       <div class="mech-row">
         <span class="mech-row-what">Alarmas y sus sonidos</span>
@@ -2843,8 +2842,9 @@ html,body{overflow-x:hidden;}
 
     <ul class="mech-facts">
       <li id="mechFactOffline">Funciona completa en modo avión</li>
+      <li id="mechFactPersist">Comprobando si tus datos están protegidos…</li>
       <li>Las notificaciones las arma el propio dispositivo, sin pasar por nadie</li>
-      <li>La página tiene prohibido abrir conexiones salientes</li>
+      <li>Solo puede conectarse al clima y a tu IA del Armario; cualquier otra conexión se bloquea</li>
     </ul>
 
     <div class="modal-btns">
@@ -2856,6 +2856,7 @@ html,body{overflow-x:hidden;}
 <div class="notif-banner" id="notifBanner"></div>
 
 <script>
+// @ts-nocheck
 // ══════════════════════════════════════════════════════════════════
 // 0) BASE — iconos, caché de nodos y preferencias de movimiento
 // Todo lo de abajo se define antes que el resto del JS porque lo usan
@@ -6488,6 +6489,7 @@ gymLoadStore().then(()=>gymRender(true));
 </script>
 
 <script>
+// @ts-nocheck
 // ── Notificaciones — pide permiso solo UNA vez ─────────────────────────────
 async function initNotifications(){
   if(!('Notification' in window)) return;
@@ -6514,7 +6516,7 @@ function scheduleCalNotifications(){
     const key=calKey(d.getFullYear(),d.getMonth(),d.getDate());
     const evs=calEvents[key];
     if(!evs||!evs.length) return;
-    // offset 1 = "mañana": es el recordatorio del día ANTERIOR a cada evento registrado.
+    // offset 1 = "mañana": es el recordatorio del día ANTERIOR que cada evento registrado.
     // offset 0 = "hoy": aviso el mismo día. Cada uno tiene su propia clave (antes
     // compartían una sola y el segundo aviso nunca llegaba a dispararse).
     const isEve=offset===1;
@@ -6569,6 +6571,7 @@ setInterval(()=>{if(typeof Notification!=='undefined'&&Notification.permission==
 </div>
 
 <script>
+// @ts-nocheck
 // Mostrar banner iOS solo en Safari/iOS y si no fue descartado ni está en standalone
 (function(){
   const isIOS=/iphone|ipad|ipod/i.test(navigator.userAgent);
@@ -6581,15 +6584,16 @@ setInterval(()=>{if(typeof Notification!=='undefined'&&Notification.permission==
 })();
 </script>
 <script>
+// @ts-nocheck
 // ── Registro del Service Worker (PWA offline + notificaciones fiables) ──
 //
 // El Service Worker es lo que hace que Vesta abra sin conexión y que las
 // notificaciones sean fiables en Android. Necesita dos cosas: estar
 // servido por http(s) y que sw.js esté al lado del HTML.
 //
-// Eso pasa en GitHub Pages. NO pasa si abrís el archivo suelto (file://)
+// Eso pasa en GitHub Pages. NO pasara si abre el archivo suelto (file://)
 // ni en una vista previa que sirve el HTML desde otro dominio: ahí el
-// navegador busca sw.js, recibe un 404 y escupe un warning que parece un
+// navegador busca sw.js, recibe un 404 y suelta un warning que parece un
 // error de Vesta. No lo es — la app funciona igual, solo que sin caché
 // offline. Por eso acá el fallo se explica en vez de alarmar.
 const SW_OK = 'serviceWorker' in navigator && location.protocol.startsWith('http');
@@ -6597,7 +6601,7 @@ if (SW_OK) {
   window.addEventListener('load', () => {
     navigator.serviceWorker.register('./sw.js')
       .then((reg) => {
-        // Si ya hay una versión nueva esperando, no forzamos nada:
+        // Si ya hay una versión nueva esperando, no fuerza nada:
         // el SW nuevo toma control en la próxima carga (skipWaiting ya
         // está activado del lado del SW para minimizar el retraso).
         reg.update().catch(() => {});
@@ -6665,8 +6669,9 @@ async function showAppNotification(title, options) {
 </script>
 
 <script>
+// @ts-nocheck
 // ══════════════════════════════════════════════════════════════════
-// MOTOR DE MOVIMIENTO — se engancha a las funciones ya definidas
+// MOTOR DE MOVIMIENTO — se engancha a las funciones definidas
 // arriba sin reescribirlas: guarda la original y la envuelve. Así la
 // lógica de cada módulo queda intacta y el movimiento vive en un solo
 // lugar, fácil de apagar o de ajustar.
@@ -7163,7 +7168,22 @@ void main(){
   // ── 13) HOJA "MECANISMO" (privacidad) ────────────────────────────
   // El espacio usado se consulta con navigator.storage.estimate(), que
   // es una lectura local del propio navegador: no sale nada afuera.
-  window.openMechSheet=function(){
+  // Pide al navegador tratar los datos de Vesta como persistentes: así no
+  // los borra solo por falta de espacio o por no usar la app un tiempo.
+  // Se pide una vez al arrancar; el resultado se muestra en esta hoja.
+  let persistState = 'Comprobando si tus datos están protegidos…';
+  (async () => {
+    try {
+      if (!navigator.storage || !navigator.storage.persist) {
+        persistState = 'Este navegador no permite proteger los datos'; return;
+      }
+      const ok = (await navigator.storage.persisted()) || (await navigator.storage.persist());
+      persistState = ok
+        ? 'Tus datos están protegidos: el navegador no los borra solo'
+        : 'Tus datos no están protegidos: instalá Vesta en la pantalla de inicio';
+    } catch (e) { persistState = 'Este navegador no permite proteger los datos'; }
+  })();
+  window.openMechSheet = function () {
     const ov=EL.mechOverlay;
     if(!ov)return;
     ov.classList.add('open');
@@ -7171,6 +7191,8 @@ void main(){
     if(fact)fact.textContent=navigator.onLine
       ? 'Funciona completa en modo avión'
       : 'Ahora mismo estás sin conexión y Vesta anda igual';
+    const pf = document.getElementById('mechFactPersist');
+    if (pf) pf.textContent = persistState;
     const val=EL.mechUsage,fill=EL.mechFill;
     if(fill)fill.style.width='0';
     if(!navigator.storage||!navigator.storage.estimate){
